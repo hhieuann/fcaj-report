@@ -17,11 +17,11 @@ pre: " <b> 1.2. </b> "
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
-| 2 | [fill in] | 21/09/2026 | | |
+| 2 | - Self-study on AWS Skill Builder, AWS Cloud Practitioner Essentials, Module 4 - Going Global: Regions, Availability Zones, edge locations and Amazon CloudFront, ways to provision AWS resources | 21/09/2026 | 21/09/2026 | https://skillbuilder.aws/learn/94T2BEN85A/aws-cloud-practitioner-essentials/ |
 | 3 | - **Practice** lab 000003 VPC in the Singapore region (ap-southeast-1):<br>  + Create VPC 10.10.0.0/16 with 4 public/private subnets across 2 Availability Zones, an Internet Gateway, a Route Table for the public subnets<br>  + Create 3 Security Groups; enable VPC Flow Logs with an IAM role for log delivery<br>  + Create a key pair, launch EC2 Public and EC2 Private; SSH into EC2 Public, then SSH from it into EC2 Private (bastion)<br>  + Clean up all resources in the correct order<br>- Summarized the whole lab for review, including the parts not practiced: NAT Gateway, Reachability Analyzer, EC2 Instance Connect Endpoint, Session Manager, CloudWatch alarm<br>- Filtered the 127-lab catalog for the fullstack path, selected 25 labs for 12 weeks<br>- Learned the daily worklog rules and the program's worklog template<br>- Started looking for a workshop topic for the team | 22/09/2026 | 22/09/2026 | https://000003.awsstudygroup.com<br>https://cloudjourney.awsstudygroup.com<br>https://workshop-sample.awsfcaj.com/1-worklog/ |
 | 4 | - Read ahead the theory and steps of lab 000048 (IAM Roles for EC2) and lab 000057 (static website on S3); noted the commands that change on Amazon Linux 2023<br>- Summarized and reviewed lab 000004 Compute Essentials with EC2 (9 chapters): Security Groups, EBS, snapshots, AMIs, a Node.js + MariaDB app on one instance | 23/09/2026 | 23/09/2026 | https://000048.awsstudygroup.com<br>https://000057.awsstudygroup.com<br>https://000004.awsstudygroup.com |
-| 5 | [fill in] | 24/09/2026 | | |
-| 6 | [fill in] | 25/09/2026 | | |
+| 5 | - Self-study on AWS Skill Builder, AWS Cloud Practitioner Essentials, Module 5 - Networking: Amazon VPC, subnets, security groups and network ACLs, connecting to AWS, Amazon Route 53 | 24/09/2026 | 24/09/2026 | https://skillbuilder.aws/learn/94T2BEN85A/aws-cloud-practitioner-essentials/ |
+| 6 | - Self-study on AWS Skill Builder, AWS Cloud Practitioner Essentials, Module 6 - Storage: Amazon EBS, Amazon S3 and storage classes, Amazon EFS, block vs object vs file storage | 25/09/2026 | 25/09/2026 | https://skillbuilder.aws/learn/94T2BEN85A/aws-cloud-practitioner-essentials/ |
 
 ### Week 2 Achievements:
 
@@ -33,3 +33,4 @@ pre: " <b> 1.2. </b> "
 * Solved real issues: `.pem` file permissions on Windows (`icacls`), nested SSH not accepting "yes" (`StrictHostKeyChecking=accept-new`).
 * Cleaned up every resource after the lab, leaving no ongoing cost.
 * Have a 25-lab path for the fullstack direction across the 12-week internship.
+* Self-studied AWS Cloud Practitioner Essentials on Skill Builder, modules 4–6: core AWS service knowledge applied in labs and the project.

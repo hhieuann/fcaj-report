@@ -17,11 +17,11 @@ pre: " <b> 1.2. </b> "
 
 | Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu |
 |-----|-----------|--------------|-----------------|----------------|
-| 2 | [bạn điền] | 21/09/2026 | | |
+| 2 | - Tự học trên AWS Skill Builder, khoá AWS Cloud Practitioner Essentials, Module 4 - Going Global: Region, Availability Zone, edge location và Amazon CloudFront, các cách tạo tài nguyên trên AWS | 21/09/2026 | 21/09/2026 | https://skillbuilder.aws/learn/94T2BEN85A/aws-cloud-practitioner-essentials/ |
 | 3 | - **Thực hành** lab 000003 VPC ở region Singapore (ap-southeast-1):<br>  + Tạo VPC 10.10.0.0/16 với 4 subnet public/private trên 2 Availability Zone, Internet Gateway, Route Table cho subnet public<br>  + Tạo 3 Security Group; bật VPC Flow Logs kèm IAM role ghi log<br>  + Tạo key pair, chạy EC2 Public và EC2 Private; SSH vào EC2 Public rồi từ đó SSH sang EC2 Private (bastion)<br>  + Dọn dẹp toàn bộ tài nguyên theo đúng thứ tự<br>- Tổng hợp lại cả lab để ôn, gồm các phần chưa thực hành: NAT Gateway, Reachability Analyzer, EC2 Instance Connect Endpoint, Session Manager, CloudWatch alarm<br>- Lọc catalog 127 lab theo định hướng fullstack, chọn 25 lab cho 12 tuần<br>- Nắm quy định worklog hằng ngày và mẫu worklog của chương trình<br>- Bắt đầu tìm chủ đề workshop cho nhóm | 22/09/2026 | 22/09/2026 | https://000003.awsstudygroup.com<br>https://cloudjourney.awsstudygroup.com<br>https://workshop-sample.awsfcaj.com/1-worklog/ |
 | 4 | - Đọc trước lý thuyết và các bước của lab 000048 (IAM Role cho EC2) và lab 000057 (website tĩnh trên S3); nắm các lệnh cần đổi khi chạy trên Amazon Linux 2023<br>- Tổng hợp và đọc lại lab 000004 Compute Essentials with EC2 (9 chương): Security Group, EBS, snapshot, AMI, ứng dụng Node.js + MariaDB trên một máy | 23/09/2026 | 23/09/2026 | https://000048.awsstudygroup.com<br>https://000057.awsstudygroup.com<br>https://000004.awsstudygroup.com |
-| 5 | [bạn điền] | 24/09/2026 | | |
-| 6 | [bạn điền] | 25/09/2026 | | |
+| 5 | - Tự học trên AWS Skill Builder, khoá AWS Cloud Practitioner Essentials, Module 5 - Networking: Amazon VPC, subnet, security group và network ACL, kết nối mạng với AWS, Amazon Route 53 | 24/09/2026 | 24/09/2026 | https://skillbuilder.aws/learn/94T2BEN85A/aws-cloud-practitioner-essentials/ |
+| 6 | - Tự học trên AWS Skill Builder, khoá AWS Cloud Practitioner Essentials, Module 6 - Storage: Amazon EBS, Amazon S3 và các lớp lưu trữ, Amazon EFS, so sánh lưu trữ khối, đối tượng và tệp | 25/09/2026 | 25/09/2026 | https://skillbuilder.aws/learn/94T2BEN85A/aws-cloud-practitioner-essentials/ |
 
 ### Kết quả đạt được tuần 2:
 
@@ -33,3 +33,4 @@ pre: " <b> 1.2. </b> "
 * Xử lý được lỗi thực tế: quyền file `.pem` trên Windows (`icacls`), SSH lồng SSH không nhận "yes" (`StrictHostKeyChecking=accept-new`).
 * Dọn sạch tài nguyên sau lab, không để lại chi phí.
 * Có lộ trình 25 lab theo hướng fullstack cho 12 tuần OJT.
+* Tự học khoá AWS Cloud Practitioner Essentials trên Skill Builder, module 4–6: nắm kiến thức nền về dịch vụ AWS để áp dụng vào lab và dự án.
