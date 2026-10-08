@@ -11,15 +11,11 @@ chapter: false
 
 &emsp; **Full Name:** Nguyen Hieu An
 
-&emsp; **Phone Number:** [fill in]
-
 &emsp; **Email:** hieuannguyen2k6@gmail.com
 
 &emsp; **University:** FPT University, Ho Chi Minh City
 
-&emsp; **Major:** [fill in]
-
-&emsp; **Class:** [fill in]
+&emsp; **Major:** Software Engineering
 
 &emsp; **Internship Company:** Amazon Web Services Vietnam Co., Ltd.
 

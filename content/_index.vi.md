@@ -11,15 +11,11 @@ chapter: false
 
 &emsp; **Họ và tên:** Nguyễn Hiếu An
 
-&emsp; **Số điện thoại:** [bạn điền]
-
 &emsp; **Email:** hieuannguyen2k6@gmail.com
 
 &emsp; **Trường:** Trường Đại học FPT TP.HCM
 
-&emsp; **Ngành:** [bạn điền]
-
-&emsp; **Lớp:** [bạn điền]
+&emsp; **Ngành:** Kỹ thuật phần mềm
 
 &emsp; **Công ty thực tập:** Công ty TNHH Amazon Web Services Việt Nam
 
