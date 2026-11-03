@@ -23,4 +23,9 @@ pre: " <b> 1.7. </b> "
 
 ### Week 7 Achievements:
 
-* In progress.
+* Product recommendations working on dev: Nhân's nightly job writes the `recs` table (first real run 27/10, no errors), the recommendations API returns data, and 2 web widgets ("Đang được mua nhiều" / "Dành cho bạn" on the home page, "Thường mua kèm" on the product page). Signing out also clears the previous user's personal recommendations (#303).
+* Ordering complete on dev: the worker confirms orders and sends emails through SES; O7 acceptance passed (Hoàng received both the confirmation and cancellation emails).
+* Security: closed the OIDC review (#180, risk accepted with GitHub safeguards); fixed 2 false-positive alarms (#280); the pre sign-up Lambda can only read the user pool of its own environment (#305), verified with the IAM Policy Simulator; decided on pay-as-you-go WAF on prod only after finding that a Free Tier account cannot use the CloudFront Free plan.
+* Agreed the v0.2.0 scope with the team: admin, WAF, the MFA screen and web events move to `v1.0.0-rc.1`; the acceptance checklist assigns each area to someone who did not build it.
+* Not achieved: `release/v0.2.0` was not cut on 30/10 as planned and moved to week 8. Blog 1 was fully reviewed but not published (account ID in screenshots still to be masked).
+* Lesson: several PRs were merged without review early in the week; after a reminder, PRs later in the week all waited for approval before merging.

@@ -23,4 +23,9 @@ pre: " <b> 1.7. </b> "
 
 ### Kết quả đạt được tuần 7:
 
-* Đang cập nhật.
+* Gợi ý sản phẩm chạy thật trên dev: job mỗi đêm của Nhân ghi bảng `recs` (lần chạy thật đầu tiên 27/10, không lỗi), API gợi ý trả dữ liệu, 2 widget trên web ("Đang được mua nhiều" / "Dành cho bạn" ở trang chủ, "Thường mua kèm" ở trang chi tiết). Đăng xuất xoá cả dữ liệu gợi ý riêng của người vừa dùng (#303).
+* Đặt hàng hoàn chỉnh trên dev: worker xác nhận đơn và gửi thư qua SES; nghiệm thu O7 đạt (Hoàng nhận đủ thư xác nhận và thư huỷ).
+* Bảo mật: đóng review OIDC (#180, chấp nhận rủi ro có lớp chặn trên GitHub); sửa 2 alarm báo nhầm (#280); Lambda pre sign-up chỉ đọc user pool cùng môi trường (#305), kiểm bằng IAM Policy Simulator; chốt WAF trả theo dùng, chỉ prod, sau khi tìm ra tài khoản Free Tier không dùng được gói CloudFront Free.
+* Chốt phạm vi v0.2.0 với nhóm: admin, WAF, màn hình MFA, web gửi sự kiện dời sang `v1.0.0-rc.1`; checklist nghiệm thu chia người test không phải người viết.
+* Chưa đạt: không tách `release/v0.2.0` đúng hạn 30/10, dời sang tuần 8. Blog 1 đã soát xong nội dung nhưng chưa đăng (còn che account ID trong ảnh chụp màn hình).
+* Bài học: nhiều PR bị merge khi chưa có người duyệt ở đầu tuần; sau khi nhắc, các PR cuối tuần đều chờ approve rồi mới merge.
