@@ -23,4 +23,10 @@ pre: " <b> 1.8. </b> "
 
 ### Week 8 Achievements:
 
-* In progress.
+* **`v0.2.0` in prod on 05/11:** deploy green at 12:41, smoke test 6/6, release note published. This release brought queue-based ordering with confirmation emails, product recommendations and 3 new alarms to prod; the new product page is in rc.1.
+* Acceptance on staging, with each area tested by someone who did not build it: orders O1–O8 passed after Hoàng fixed #315 and #316 on the release branch; recommendations R1–R3 passed; Nhân's security checks S1–S6 passed, cross-checked with the access log.
+* Operations on staging and prod verified: no unusual errors in 48 hours of logs, queues and DLQ at 0, X-Ray traces linked across SQS, and the `recs-pipeline-no-success` alarm returned to OK after the first run.
+* Agreed the `v1.0.0-rc.1` scope (cut 10/11, tag 12/11) and wrote the checklist: admin order transitions, WAF on prod, k6 load test, PITR drill; canary (ADR-0014) and the EC2 comparison deferred.
+* Nightly now really runs ZAP and Schemathesis against staging and is green, after tightening the contract to match the server. CloudFront security headers (CSP, HSTS, frame blocking) are live on dev.
+* Not achieved: the `v0.2.0` tag was 3 days late against the 02/11 plan; on prod, emails to unverified customers are rejected because SES is still in sandbox; the recommendation title bug (#333) moved to rc.1.
+* Lessons: settle what moves out at least 2 days before the cut; release fixes must branch from and target `release/*`; merge `main` into the release branch at cut time so the PR into `main` is not `BEHIND`; after the first deploy with a new job, run it once and check the page.

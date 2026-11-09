@@ -23,4 +23,10 @@ pre: " <b> 1.8. </b> "
 
 ### Kết quả đạt được tuần 8:
 
-* Đang cập nhật.
+* **`v0.2.0` lên prod ngày 05/11:** deploy xanh lúc 12:41, smoke test 6/6, có release note. Bản này đưa lên prod đặt hàng qua hàng đợi kèm thư xác nhận, gợi ý sản phẩm và 3 alarm mới; trang chi tiết mới để sang rc.1.
+* Nghiệm thu trên staging theo nguyên tắc người test không phải người viết: đặt hàng O1–O8 đạt sau khi Hoàng sửa #315, #316 ngay trên nhánh release; gợi ý R1–R3 đạt; bảo mật S1–S6 của Nhân đạt, có đối chiếu access log.
+* Vận hành staging và prod đã kiểm: log 48 giờ không có lỗi lạ, hàng đợi và DLQ về 0, X-Ray nối được trace qua SQS, alarm `recs-pipeline-no-success` tự về OK sau lượt chạy đầu.
+* Chốt phạm vi `v1.0.0-rc.1` (tách 10/11, tag 12/11) và viết checklist: admin chuyển trạng thái đơn, WAF ở prod, load test k6, diễn tập PITR; hoãn canary (ADR-0014) và bản đối chứng EC2.
+* Nightly chạy thật ZAP và Schemathesis vào staging và xanh, sau khi siết contract cho khớp server. Header bảo mật CloudFront (CSP, HSTS, chặn nhúng khung) chạy trên dev.
+* Chưa đạt: tag `v0.2.0` trễ 3 ngày so với kế hoạch 02/11; trên prod email tới khách chưa xác minh bị từ chối vì SES còn sandbox; lỗi tiêu đề khối gợi ý (#333) dời sang rc.1.
+* Bài học: chốt phần dời đi ít nhất 2 ngày trước ngày tách; PR sửa cho bản release phải tách từ và nhắm vào `release/*`; nối `main` vào nhánh release ngay lúc tách để PR vào `main` không bị `BEHIND`; sau deploy lần đầu có job mới thì chạy job một lần rồi kiểm trang.
