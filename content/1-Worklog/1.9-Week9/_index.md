@@ -24,4 +24,10 @@ pre: " <b> 1.9. </b> "
 
 ### Week 9 Achievements:
 
-* In progress.
+* **`v1.0.0-rc.1` reached prod on 12/11 as planned:** cut `release/v1.0.0` on 10/11, acceptance 10–11/11, merged into `main` on 11/11, tagged and deployed to prod on 12/11 (approved by Hoàng). First time with WAF in prod (`shop-prd-waf` stack, us-east-1); the GitHub Release is marked pre-release
+* Full acceptance on staging: admin AD1–AD3, security S1–S5, recommendations R1–R3 (Hoàng), events W1–W3 and E1 (Nhân); one fix during acceptance (#419). On prod: WAF checked by the runbook (0 BLOCK), an admin with TOTP moved a test order to `DELIVERED`, 7 alarms OK, the nightly recommendation job had 0 errors
+* Numbers for the report: P1 Lighthouse mobile 98/98/94 on staging; P2 k6 reads p95 127 ms (50 virtual users) and 108 ms (200 virtual users), orders p95 269 ms, 0 errors; P3 PITR drill restored 23 = 23 items in 3–10 minutes
+* Posted Blog 2 (PITR drill) on the AWS Study Group and updated the report's Blogs section (2 of 3 posts)
+* Decided features for the release after v1.0.0: Forgot password (done by Hoàng on `develop`) and admin order cancellation (8 design points); fixed threat model L1, L3, L8 (the web calls `cognito-idp` directly, so WAF does not apply) and added L9
+* Not achieved: the Budgets activity of Earn AWS credits is still not credited after the 4th attempt; the WAF core rule set is still in count mode; the release branch has not been merged back into `develop`
+* Lessons: do not push more commits after a review is in; the release workflow should mark `-rc` tags as pre-release; when checking WAF, send the test request from a separate window so its `Referer` does not get later requests counted; run `Read-Host` on its own, not inside a pasted block

@@ -24,4 +24,10 @@ pre: " <b> 1.9. </b> "
 
 ### Kết quả đạt được tuần 9:
 
-* Đang cập nhật.
+* **`v1.0.0-rc.1` lên prod ngày 12/11 đúng kế hoạch:** tách `release/v1.0.0` 10/11, nghiệm thu 10–11/11, merge vào `main` 11/11, tag và deploy prod 12/11 (Hoàng duyệt). Lần đầu có WAF ở prod (stack `shop-prd-waf`, us-east-1), GitHub Release đánh dấu pre-release
+* Nghiệm thu đủ trên staging: admin AD1–AD3, bảo mật S1–S5, gợi ý R1–R3 (Hoàng), sự kiện W1–W3 và E1 (Nhân); một bản sửa trong lúc nghiệm thu (#419). Trên prod: kiểm WAF theo runbook (0 BLOCK), admin có TOTP chuyển đơn thử tới `DELIVERED`, 7 alarm OK, job gợi ý đêm 0 lỗi
+* Có số đo cho báo cáo: P1 Lighthouse mobile 98/98/94 trên staging; P2 k6 đọc p95 127 ms (50 người ảo) và 108 ms (200 người ảo), đặt hàng p95 269 ms, 0 lỗi; P3 diễn tập PITR khôi phục 23 = 23 item trong 3–10 phút
+* Đăng Blog 2 (diễn tập PITR) lên AWS Study Group, cập nhật mục Blogs của báo cáo (2/3 bài)
+* Chốt các tính năng cho bản sau v1.0.0: Quên mật khẩu (Hoàng đã làm xong trên `develop`), admin huỷ đơn (8 điểm thiết kế); sửa threat model L1, L3, L8 (web gọi thẳng `cognito-idp` nên WAF không áp dụng), thêm L9
+* Chưa đạt: activity Budgets của Earn AWS credits vẫn chưa được ghi nhận sau lần thử thứ 4; core rule set của WAF còn ở chế độ đếm; chưa đưa nhánh release về `develop`
+* Bài học: không đẩy thêm commit sau khi đã có người duyệt; workflow tạo release nên tự đánh dấu pre-release cho tag `-rc`; khi kiểm WAF, chạy request thử trong cửa sổ riêng để `Referer` không làm các request sau bị đếm; `Read-Host` phải chạy riêng, không dán chung khối lệnh
