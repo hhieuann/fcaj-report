@@ -16,10 +16,65 @@ pre: " <b> 1.8. </b> "
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|-------------------|
-| 3 | - Reviewed progress after 4 days with no changes: v0.2.0 had not been branched or tagged; proposed a new schedule to the team (tag 05/11, `v1.0.0-rc.1` moved to 12/11)<br>- Merged checklist #308 and cut `release/v0.2.0`; staging deploy green (smoke test, E2E). Checked staging: the email worker has all environment variables, the recommendations schedule is enabled, the queue and DLQ are empty, 3 alarms OK<br>- Order acceptance tests O1–O8 on staging: O1, O2, O3, O4, O6, O8 passed; O5 partly passed (the web does not show the guidance text and link when over 3 orders, #315); O7 had passed on dev; also found that `/orders` does not redirect to sign-in when signed out (#316). Checked the worker logs; cancelled all test orders to restore stock. Recorded results in the checklist (PR #318 into the release branch)<br>- Reviewed Nhân's draft security report (#310); merged #310 and 4 Dependabot PRs into `develop`, dev deploy green<br>- Ran the recommendations job manually on staging so recommendation tests have data; pulled the `PURCHASE` Lambda log for Nhân's S6 check (no personal data in logs) | 03/11/2026 | 03/11/2026 | https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html<br>https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs |
-| 4 | - Reviewed Hoàng's 4 PRs fixing #315 and #316: found that #320 and #322 targeted the wrong base branches, and #320 would have pulled a batch of library updates from `develop` into the release. Corrected the bases, then merged #321 and #322 into the release and #320 into `develop`<br>- Recorded Hoàng's recommendation results R1–R3 in the checklist (#348). Opened #333 for the recommendation block title not following `source`, moved to `v1.0.0-rc.1`<br>- Mistake: told Hoàng that staging returned `NEWEST` without calling the API; Nhân checked and found `BESTSELLER`, and I corrected it in #333<br>- Reviewed and merged Hoàng's #338, #340, #341 (product detail page), resolving a `tokens.css` conflict. Approved #344, which fixes the panel table of contents<br>- Measured Lighthouse on 3 dev pages to compare with Hoàng's numbers; Hoàng traced the difference to the Lighthouse version. Decided to keep the target of 90 and fix the method on dev CloudFront<br>- Retested on staging: O5 passed; `/orders` redirects to sign-in and returns to the same page (#316). Logs showed no unusual errors over 48 hours, the queues and DLQ were at 0, and the dashboard has the queue charts. X-Ray: 2 consecutive traces (ordering sends to SQS, the worker has its own trace). Duplicate username metric: run for real on dev, configuration only on staging | 04/11/2026 | 04/11/2026 | https://developer.chrome.com/docs/lighthouse/overview<br>https://docs.aws.amazon.com/xray/latest/devguide/xray-services-sqs.html |
-| 5 | - Reviewed #350 with Nhân's security results S1–S6: compared HTTP codes with the access log; asked for fixes to an extra table cell that hid the results column and a job note in the wrong order; merged after the fixes<br>- Opened #357 to bring the release into `main`: CI was red because commitlint flagged 2 old Dependabot commits of 102 characters, fixed in #359. The release branch lacked a commit from `main` and `gh pr update-branch` returned an error, so I connected them through #361 (no file changes). Hoàng approved and merged #357<br>- Tagged `v0.2.0`, Nhân pressed Approve; **prod deploy green at 12:41, smoke test 6/6**. Updated the release note<br>- Checked prod: the 3 new alarms exist. The recommendation block was empty because the job had not run, so I ran it manually and it wrote the bestsellers (`NEWEST` because prod has no orders yet, which exposes bug #333). Placed and cancelled 1 test order (O1, O2, O6): passed; emails were rejected as `not_verified` because SES is still in sandbox<br>- Alarm `recs-pipeline-no-success` went to ALARM at 12:46 because the previous 26 hours had no runs (Nhân explained this is by design) and returned to OK at 13:46<br>- Closed out the checklist, wrote the release lessons, and brought the fixes back to `develop` (#368; #366 had to be closed because its branch name contained a dot, against the rule) | 05/11/2026 | 05/11/2026 | https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html<br>https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html<br>https://commitlint.js.org/ |
-| 6 | - Closed the remaining boxes of the v0.2.0 checklist (#374). Compared the plan with the code and wrote the `v1.0.0-rc.1` checklist (#376): branch cut 10/11, tag 12/11; in scope only the minimal admin API and screen, k6 load test, PITR drill and nightly fixes; canary and the EC2 comparison deferred<br>- Fixed the nightly run that went red after enabling Schemathesis (#378, #383): the contract was looser than the server, so I added patterns for `ProductId`, `PageCursor`, `OrderId`; added `schemathesis.toml`; dropped checks that do not apply (CloudFront answers TRACE, API Gateway returns JSON for malformed URLs). Nightly green<br>- Deferred the ordering canary (#386): set ADR-0014 to deferred and renamed the step in `deploy-prod.yml`, which had been named canary although prod deploys directly<br>- Security headers for CloudFront (#388, issue #299): a `ResponseHeadersPolicy` with a CSP that only allows the site and Cognito, frame blocking, HSTS 365 days, Referrer-Policy, Permissions-Policy, and the `Server` header removed; applied to all 3 behaviours, live on dev<br>- Reviewed and approved #372 (Nhân's WAF, revised after my feedback) and 2 of Hoàng's admin PRs: order transition API (#385), Lambda and routes (#387) | 06/11/2026 | 06/11/2026 | https://schemathesis.readthedocs.io/<br>https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/adding-response-headers.html<br>https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP |
+| 3 | - Reviewed progress, proposed a new schedule (tag 05/11, rc.1 12/11) <br> - Merged checklist #308, cut `release/v0.2.0`, checked staging <br> - Order acceptance O1–O8 on staging (PR #318) <br> - Reviewed Nhân's security report (#310), merged 4 Dependabot PRs <br> - Ran the recommendations job on staging, pulled logs for S6 | 03/11/2026 | 03/11/2026 | [Test Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/testing-functions.html) <br> [Workflow concurrency](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs) |
+| 4 | - Reviewed Hoàng's 4 PRs fixing #315, #316, corrected base branches <br> - Recorded recommendation results R1–R3 (#348), opened #333 <br> - Corrected my `NEWEST` mistake in #333 <br> - Reviewed and merged #338, #340, #341; approved #344 <br> - Measured Lighthouse on 3 dev pages, kept the target of 90 <br> - Retested O5, #316 on staging; checked logs, X-Ray | 04/11/2026 | 04/11/2026 | [Lighthouse](https://developer.chrome.com/docs/lighthouse/overview) <br> [X-Ray and SQS](https://docs.aws.amazon.com/xray/latest/devguide/xray-services-sqs.html) |
+| 5 | - Reviewed and merged #350 (Nhân's security checks S1–S6) <br> - Brought the release into `main` (#357, #359, #361) <br> - **Tagged `v0.2.0`, prod deploy green at 12:41** <br> - Checked prod: alarms, recommendations job, test order <br> - Alarm `recs-pipeline-no-success` went to ALARM, then OK <br> - Closed the checklist, brought fixes back to `develop` (#368) | 05/11/2026 | 05/11/2026 | [CloudWatch alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html) <br> [SES production access](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html) <br> [commitlint](https://commitlint.js.org/) |
+| 6 | - Closed the v0.2.0 checklist (#374), wrote the rc.1 checklist (#376) <br> - Fixed the nightly run after enabling Schemathesis (#378, #383) <br> - Deferred the ordering canary (#386) <br> - Security headers for CloudFront (#388, issue #299) <br> - Reviewed Nhân's WAF (#372), 2 admin PRs (#385, #387) | 06/11/2026 | 06/11/2026 | [Schemathesis](https://schemathesis.readthedocs.io/) <br> [CloudFront response headers](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/adding-response-headers.html) <br> [MDN CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) |
+
+### Task details:
+
+#### Tuesday (03/11/2026)
+
+* **Reviewed progress after 4 days with no changes:** v0.2.0 had not been branched or tagged; proposed a new schedule to the team: tag 05/11, `v1.0.0-rc.1` moved to 12/11.
+* **Cut the release branch:** merged checklist #308 and cut `release/v0.2.0`; staging deploy green (smoke test, E2E). Checked staging: the email worker has all environment variables, the recommendations schedule is enabled, the queue and DLQ are empty, 3 alarms OK.
+* **Order acceptance tests O1–O8 on staging:**
+  * O1, O2, O3, O4, O6, O8 passed; O7 had passed on dev.
+  * O5 partly passed: the web does not show the guidance text and link when over 3 orders (#315).
+  * Also found that `/orders` does not redirect to sign-in when signed out (#316).
+  * Checked the worker logs; cancelled all test orders to restore stock. Recorded results in the checklist (PR #318 into the release branch).
+* **Reviewed Nhân's draft security report (#310):** merged #310 and 4 Dependabot PRs into `develop`, dev deploy green.
+* **Ran the recommendations job manually on staging** so recommendation tests have data; pulled the `PURCHASE` Lambda log for Nhân's S6 check (no personal data in logs).
+
+#### Wednesday (04/11/2026)
+
+* **Reviewed Hoàng's 4 PRs fixing #315 and #316:** found that #320 and #322 targeted the wrong base branches, and #320 would have pulled a batch of library updates from `develop` into the release. Corrected the bases, then merged #321 and #322 into the release and #320 into `develop`.
+* **Recommendations R1–R3:** recorded Hoàng's results in the checklist (#348). Opened #333 for the recommendation block title not following `source`, moved to `v1.0.0-rc.1`.
+* **Mistake:** told Hoàng that staging returned `NEWEST` without calling the API; Nhân checked and found `BESTSELLER`, and I corrected it in #333.
+* **Product detail page:** reviewed and merged Hoàng's #338, #340, #341, resolving a `tokens.css` conflict. Approved #344, which fixes the panel table of contents.
+* **Lighthouse:** measured 3 dev pages to compare with Hoàng's numbers; Hoàng traced the difference to the Lighthouse version. Decided to keep the target of 90 and fix the method on dev CloudFront.
+* **Retested on staging:**
+  * O5 passed; `/orders` redirects to sign-in and returns to the same page (#316).
+  * No unusual errors in 48 hours of logs; the queues and DLQ at 0; the dashboard has the queue charts.
+  * X-Ray: 2 consecutive traces (ordering sends to SQS, the worker has its own trace).
+  * Duplicate username metric: run for real on dev, configuration only on staging.
+
+#### Thursday (05/11/2026)
+
+* **Reviewed #350 (Nhân's security results S1–S6):** compared HTTP codes with the access log; asked for fixes to an extra table cell that hid the results column and a job note in the wrong order; merged after the fixes.
+* **Brought the release into `main` (#357):**
+  * CI was red because commitlint flagged 2 old Dependabot commits of 102 characters, fixed in #359.
+  * The release branch lacked a commit from `main` and `gh pr update-branch` returned an error, so I connected them through #361 (no file changes).
+  * Hoàng approved and merged #357.
+* **Tagged `v0.2.0`:** Nhân pressed Approve; **prod deploy green at 12:41, smoke test 6/6**. Updated the release note.
+* **Checked prod:**
+  * The 3 new alarms exist.
+  * The recommendation block was empty because the job had not run, so I ran it manually and it wrote the bestsellers (`NEWEST` because prod has no orders yet, which exposes bug #333).
+  * Placed and cancelled 1 test order (O1, O2, O6): passed; emails were rejected as `not_verified` because SES is still in sandbox.
+* **Alarm `recs-pipeline-no-success`:** went to ALARM at 12:46 because the previous 26 hours had no runs (Nhân explained this is by design) and returned to OK at 13:46.
+* **Closed out the release:** closed the checklist, wrote the release lessons, and brought the fixes back to `develop` (#368; #366 had to be closed because its branch name contained a dot, against the rule).
+
+#### Friday (06/11/2026)
+
+* **Checklists:** closed the remaining boxes of the v0.2.0 checklist (#374). Compared the plan with the code and wrote the `v1.0.0-rc.1` checklist (#376):
+  * Branch cut 10/11, tag 12/11.
+  * In scope only the minimal admin API and screen, k6 load test, PITR drill and nightly fixes.
+  * Canary and the EC2 comparison deferred.
+* **Fixed the nightly run that went red after enabling Schemathesis (#378, #383):**
+  * The contract was looser than the server, so I added patterns for `ProductId`, `PageCursor`, `OrderId`; added `schemathesis.toml`.
+  * Dropped checks that do not apply (CloudFront answers TRACE, API Gateway returns JSON for malformed URLs). Nightly green.
+* **Deferred the ordering canary (#386):** set ADR-0014 to deferred and renamed the step in `deploy-prod.yml`, which had been named canary although prod deploys directly.
+* **Security headers for CloudFront (#388, issue #299):** a `ResponseHeadersPolicy` with a CSP that only allows the site and Cognito, frame blocking, HSTS 365 days, Referrer-Policy, Permissions-Policy, and the `Server` header removed; applied to all 3 behaviours, live on dev.
+* **Reviewed and approved:** #372 (Nhân's WAF, revised after my feedback) and 2 of Hoàng's admin PRs: order transition API (#385), Lambda and routes (#387).
 
 ### Week 8 Achievements:
 
