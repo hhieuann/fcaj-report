@@ -1,0 +1,36 @@
+<style type="text/css">
+  /* Bảng worklog (5 cột: Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu).
+     Chỉ áp cho bảng có đủ 5 cột để không đổi các bảng khác của Workshop. */
+  #body-inner table:has(th:nth-child(5)) {
+    width: 100%;
+  }
+  #body-inner table:has(th:nth-child(5)) td {
+    vertical-align: top;
+  }
+  #body-inner table:has(th:nth-child(5)) th:nth-child(1),
+  #body-inner table:has(th:nth-child(5)) td:nth-child(1) {
+    text-align: center;
+    width: 3em;
+  }
+  #body-inner table:has(th:nth-child(5)) th:nth-child(2) {
+    min-width: 18em;
+  }
+  #body-inner table:has(th:nth-child(5)) td:nth-child(3),
+  #body-inner table:has(th:nth-child(5)) td:nth-child(4) {
+    white-space: nowrap;
+    font-size: 0.9em;
+  }
+  #body-inner table:has(th:nth-child(5)) th:nth-child(5) {
+    min-width: 11em;
+  }
+  /* Theme gắn nút copy cạnh mọi đoạn code trong dòng chữ, làm câu văn và ô bảng rối.
+     Chỉ giữ nút copy cho khối lệnh (pre), là chỗ người đọc Workshop cần copy */
+  #body-inner :not(pre) > code + .copy-to-clipboard {
+    display: none;
+  }
+  /* Theme mặc định cắt link ở bất kỳ ký tự nào (break-all); link nguồn giờ là tên ngắn nên ngắt theo từ */
+  #body-inner table:has(th:nth-child(5)) td a {
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+</style>
