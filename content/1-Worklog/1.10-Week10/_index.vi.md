@@ -84,7 +84,7 @@ pre: " <b> 1.10. </b> "
   * Phần nền: CloudFront + WAF là cửa duy nhất (web tĩnh trên S3 qua OAC, `/api/*` sang HTTP API, cache `/api/v1/products*`); Cognito cấp JWT, HTTP API kiểm bằng JWT authorizer; mỗi module một Lambda ngoài VPC và một bảng DynamoDB (ADR-0005, 0006, 0007, 0012).
   * Luồng 1 xem hàng: `catalog` đọc sản phẩm, `recommendation` chỉ đọc gợi ý tính sẵn trong bảng `recs`; `events` ghi `VIEW`, `ADD_TO_CART` với `userId` băm HMAC, từ chối `PURCHASE` từ trình duyệt.
   * Luồng 2 đặt hàng: một giao dịch DynamoDB (kiểm giá, trừ kho, tối đa 3 đơn mở, ghi `PENDING`) rồi đẩy SQS; worker chuyển `CONFIRMED`, gửi SNS `order-confirmed` để `events` ghi `PURCHASE`, gửi email SES; lỗi quá 3 lần vào DLQ.
-  * Luồng 3 gợi ý mỗi đêm: EventBridge Scheduler 02:00 gọi Lambda Python, dữ liệu huấn luyện lưu S3 mã hoá KMS, tính thường mua kèm, dành cho bạn, bán chạy; mô hình chỉ được bật khi hơn baseline, đổi con trỏ `ACTIVE#<type>`.
+  * Luồng 3 gợi ý mỗi đêm: EventBridge Scheduler 02:00 gọi Lambda Python, đọc thẳng bảng `events` và `products` (bucket training-data có tạo nhưng pipeline chưa dùng), tính thường mua kèm, dành cho bạn, bán chạy; mô hình chỉ được bật khi hơn baseline, đổi con trỏ `ACTIVE#<type>`.
   * Phần rìa sơ đồ: GitHub Actions OIDC + CDK, CloudWatch alarm và runbook, 3 môi trường chung một tài khoản (ADR-0008, 0013). Bố cục dự định: người dùng bên trái, CloudFront giữa, backend bên phải, đánh số 3 luồng mỗi luồng một màu.
 * **Rà PR và issue, nhắc nhóm:** không còn PR mở (PR cuối #500 merge 17/11); issue mở #183 (MFA, Hoàng chưa mở nhánh), #501, #457 (chờ `v1.0.0` lên prod). Soạn tin nhắc Hoàng làm MFA theo thiết kế đã chốt, #501, chương 5.4; nhắc Nhân sửa 5.5 theo góp ý #486, thêm ảnh, phần chi phí; hạn nháp 24/11.
 
