@@ -20,6 +20,7 @@ pre: " <b> 1.10. </b> "
 | 3 | - Chốt nghiệp vụ trang tài khoản với Hoàng (đổi username, đổi mật khẩu) <br> - Làm API `PATCH /api/v1/me` đổi username (#471, PR #472) <br> - Thử lỗi trigger Post confirmation (L9) trên dev cùng Nhân <br> - Chốt `shared/auth` cho trang tài khoản <br> - **Review và merge PR:** <br>&emsp; + #476 sửa L9 (Nhân), #484 sửa runbook <br>&emsp; + #485 khung trang `/account` (Hoàng) <br>&emsp; + #486 chương 5.5 Workshop (Nhân) <br> - Đề xuất cách sửa bug đăng xuất #487 <br> - Sửa trình bày worklog tuần 4–10 theo template <br> - Review PR #489 sửa bug #487 (Hoàng) <br> - Viết README cho repo báo cáo <br> - Rà tiến độ nhóm, soạn kế hoạch chốt `v1.0.0` <br> - Bảng trạng thái chương Workshop cho nhóm (#491) <br> - Sửa test chập chờn làm đỏ CI (#492, PR #493) <br> - Dọn issue đã xong còn mở <br> - Review, duyệt và merge PR #496 đổi mật khẩu (Hoàng) <br> - Duyệt và merge PR #500 sửa lỗi tải lại trang bị sang `/login`, mở #501 | 17/11/2026 | 17/11/2026 | [AdminUpdateUserAttributes](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUpdateUserAttributes.html) <br> [ListUsers](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUsers.html) <br> [ChangePassword](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ChangePassword.html) <br> [GlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GlobalSignOut.html) <br> [Lambda concurrency](https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html) |
 | 4 | - Chốt 9 điểm thiết kế xác thực hai lớp (TOTP) với Hoàng <br> - Đổi cách xác minh khi khách mất thiết bị tạo mã <br> - Nêu việc bắt buộc admin bật MFA (BR-10) <br> - Tìm hiểu kiến trúc chuẩn bị chương 5.1 <br>&emsp; + 3 luồng: xem hàng, đặt hàng, gợi ý mỗi đêm <br> - Rà PR, issue; nhắc Hoàng, Nhân việc tuần này | 18/11/2026 | 18/11/2026 | [Cognito TOTP MFA](https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-mfa-totp.html) <br> [AdminSetUserMFAPreference](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminSetUserMFAPreference.html) <br> [qrcode](https://www.npmjs.com/package/qrcode) |
 | 5 | - Review tài liệu MFA của Hoàng (#502) <br>&emsp; + Đồng ý 5 chỗ Hoàng tự chọn, góp 2 chỗ sửa <br>&emsp; + Đăng nhận xét lên PR <br> - Xử lý bước Security đỏ: cảnh báo picomatch đã bị rút lại <br> - Duyệt, merge 2 PR của Nhân (#504, #506) <br> - Sửa lại luồng gợi ý trong ghi chú kiến trúc <br> - Review, merge #507: đăng nhập khi máy còn phiên cũ <br>&emsp; + Chốt cắt lại `release/v1.0.0` từ `develop` 20/11 <br> - Hoàng thử #507 trên dev: 2 ca đạt <br> - Góp ý sửa lỗi lệch tài khoản giữa 2 tab, để sau `v1.0.0` <br>&emsp; + Duyệt 3 chỉnh sửa của Hoàng cho #508 <br> - Review code MFA #502, đăng nhận xét <br>&emsp; + Chốt merge sau khi cắt `release/v1.0.0` | 19/11/2026 | 19/11/2026 | [Cognito TOTP MFA](https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-mfa-totp.html) <br> [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) <br> [pnpm audit](https://pnpm.io/cli/audit) |
+| 6 | - Soạn tin giới thiệu kiến trúc dự án cho mentor theo mô hình STAR <br>&emsp; + Lập danh sách thành phần, luồng để tự vẽ sơ đồ trên draw.io <br> - **Cắt lại `release/v1.0.0` từ `develop`:** <br>&emsp; + Đưa 6 commit rc.1 về `develop` (#509) <br>&emsp; + Viết checklist phát hành, giới hạn đã biết (#511) <br>&emsp; + Mở PR `develop` → `release/v1.0.0` (#514), chờ duyệt | 20/11/2026 | 20/11/2026 | [STAR method](https://en.wikipedia.org/wiki/Situation,_task,_action,_result) <br> [GitHub rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets) <br> [git merge-tree](https://git-scm.com/docs/git-merge-tree) |
 
 ### Chi tiết công việc:
 
@@ -121,6 +122,21 @@ pre: " <b> 1.10. </b> "
   * Còn xung đột ở `authErrors.test.ts` do #507 thêm test cùng chỗ: nhờ Hoàng giữ cả 2 nhóm.
   * Chốt merge #502 ngay sau khi cắt `release/v1.0.0` ngày 20/11 để MFA không vào `v1.0.0`; sau đó Hoàng thử trên dev (bật, đăng nhập lại phải hỏi mã, tắt, admin chưa bật bị chuyển sang trang bật).
 
+#### Thứ 6 (20/11/2026)
+
+* **Tin giới thiệu kiến trúc cho mentor (STAR):**
+  * S: shop online nhỏ cần web bán hàng có gợi ý, ngân sách thấp, nhóm 3 người, khoảng 12 tuần.
+  * T: web bán hàng serverless trên AWS, bảo mật từ đầu, chi phí thấp, 3 môi trường, triển khai tự động.
+  * A: CloudFront + WAF, S3, API Gateway, Cognito, Lambda và DynamoDB theo module; 3 luồng xem hàng, đặt hàng (SQS, SNS, SES, DLQ), gợi ý mỗi đêm (EventBridge Scheduler); CDK qua GitHub Actions OIDC, CloudWatch alarm.
+  * R: chạy trên 3 môi trường, chi phí ước tính $24,86/tháng, WAF prod chặn bằng core rule set, ZAP không có FAIL, hơn 500 test web trong CI.
+  * Viết thành đoạn văn liền mạch thay cho gạch đầu dòng cho tự nhiên; sơ đồ phải tự vẽ (nội quy: sơ đồ AI vẽ bị 0 điểm). File draw.io cũ trong máy do script sinh nên không dùng; lập bảng icon theo vùng và màu mũi tên cho 3 luồng để tự vẽ.
+* **Cắt lại `release/v1.0.0` từ `develop`:**
+  * Không xoá rồi tạo lại nhánh được: ruleset `release/*` chặn xoá và force push.
+  * Nhánh release cũ còn 6 commit rc.1 chưa về `develop` (WAF prod chặn bằng core rule set #458, màu cảnh báo 3 đơn mở #419, test load, kết quả nghiệm thu rc.1); cắt thẳng từ `develop` thì mất. Gộp thử bằng `git merge-tree` không xung đột.
+  * #509 đưa `release/v1.0.0` về `develop` (bước còn nợ sau rc.1), CI xanh, giữ nhánh; deploy dev xanh.
+  * #511 thêm `docs/releases/v1.0.0.md`: phạm vi so với rc.1, giới hạn đã biết (lỗi lệch tài khoản giữa 2 tab #508, MFA #183, C1, L14), bảng nghiệm thu N1–N7 trên staging 21–22/11, tag và deploy prod 23/11.
+  * PR `develop` → `release/v1.0.0` đầu tiên (#512) bị check tên nhánh chặn vì nhánh nguồn phải là `feature/<số-issue>-…`; mở issue #513, tạo nhánh trỏ đúng commit `108360c` của `develop`, mở lại #514. CI xanh, chờ Hoàng hoặc Nhân duyệt; merge xong mới merge MFA #502.
+
 ### Kết quả đạt được tuần 10:
 
 * WAF prod đã chặn bằng core rule set, sẵn sàng lên `v1.0.0`.
@@ -129,4 +145,5 @@ pre: " <b> 1.10. </b> "
 * API đổi username chạy trên dev, E2E đạt.
 * L9 được thử với lỗi thật: phát hiện và sửa lỗi lộ thông tin trong message, thêm alarm cho trigger.
 * Chương 5.5 đã sửa xong theo review (#504), threat model thêm L14 (#506); MFA (#502) xong code, CI xanh, chờ merge sau khi cắt `release/v1.0.0`.
+* `release/v1.0.0` được cắt lại từ `develop` qua #509, #511, #514 (chờ duyệt), có checklist và giới hạn đã biết; nghiệm thu 21–22/11, tag 23/11.
 * Còn lại trong tuần: chương 5.1 (chờ sơ đồ tự vẽ), Proposal, Events, tập demo trước `v1.0.0`.
