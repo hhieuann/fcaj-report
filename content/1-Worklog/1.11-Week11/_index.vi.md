@@ -16,7 +16,7 @@ pre: " <b> 1.11. </b> "
 
 | Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu |
 |-----|-----------|--------------|-----------------|----------------|
-| 2 | - Làm việc tại văn phòng <br> - Rà tiến độ nhóm: PR, issue, release, báo cáo <br> - Nhắc Hoàng (5.4), Nhân (ảnh 5.5) hạn 24/11 <br> - **Nghiệm thu `v1.0.0` trên staging:** <br>&emsp; + N2 admin huỷ đơn, đối chiếu tồn kho trên DynamoDB <br>&emsp; + N3 quên mật khẩu, kiểm log trigger thu hồi phiên <br>&emsp; + N6 đăng nhập khi máy còn phiên cũ <br> - Ghi kết quả nghiệm thu, thêm giới hạn SES sandbox (#523) <br> - Duyệt, merge #515 (lỗi 2 tab, đóng #508) <br> - Merge #521 (test MFA chập chờn) và 3 PR Dependabot <br> - Sửa #519 (cdk-nag L1 khi `aws-cdk-lib` có runtime mới), merge <br> - **Phát hành `v1.0.0`:** <br>&emsp; + #523 vào `release/v1.0.0`, deploy staging xanh <br>&emsp; + #524 `release/v1.0.0` → `main` <br>&emsp; + Gắn tag `v1.0.0`, Deploy prod chờ duyệt | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
+| 2 | - Làm việc tại văn phòng <br> - Rà tiến độ nhóm: PR, issue, release, báo cáo <br> - Nhắc Hoàng (5.4), Nhân (ảnh 5.5) hạn 24/11 <br> - **Nghiệm thu `v1.0.0` trên staging:** <br>&emsp; + N2 admin huỷ đơn, đối chiếu tồn kho trên DynamoDB <br>&emsp; + N3 quên mật khẩu, kiểm log trigger thu hồi phiên <br>&emsp; + N6 đăng nhập khi máy còn phiên cũ <br> - Ghi kết quả nghiệm thu, thêm giới hạn SES sandbox (#523) <br> - Duyệt, merge #515 (lỗi 2 tab, đóng #508) <br> - Merge #521 (test MFA chập chờn) và 3 PR Dependabot <br> - Sửa #519 (cdk-nag L1 khi `aws-cdk-lib` có runtime mới), merge <br> - **Phát hành `v1.0.0`:** <br>&emsp; + #523 vào `release/v1.0.0`, deploy staging xanh <br>&emsp; + #524 `release/v1.0.0` → `main` <br>&emsp; + Gắn tag `v1.0.0`, deploy prod xanh, kiểm WAF prod <br> - Soạn dàn ý Blog 3 (L9: đặt lại mật khẩu trên Cognito) | 23/11/2026 | 23/11/2026 | [AWS WAF managed rules](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-baseline.html) <br> [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
 
 ### Chi tiết công việc:
 
@@ -36,11 +36,14 @@ pre: " <b> 1.11. </b> "
 * **Phát hành `v1.0.0`:**
   * #523 (kết quả nghiệm thu) Hoàng duyệt và merge 11:33; deploy staging `06cf3ac` xanh.
   * #524 `release/v1.0.0` → `main`: Hoàng duyệt, merge 11:42 (`2e78553`), giữ nhánh release.
-  * Gắn tag `v1.0.0` trên `main` và đẩy lên; workflow Deploy prod chạy và chờ một người khác An duyệt environment `production`. Deploy xong: kiểm smoke test, WAF chặn bằng core rule set (đóng #457), đặt một đơn test trên prod rồi huỷ.
+  * Gắn tag `v1.0.0` trên `main` và đẩy lên; workflow Deploy prod chờ duyệt environment `production`, Hoàng duyệt. Mọi bước xanh (OIDC, `cdk deploy shop-prd`, smoke test), GitHub Release `v1.0.0` tạo lúc 11:52.
+  * Kiểm WAF prod (`shop-prd-web`, us-east-1): `AWSManagedRulesCommonRuleSet` ở chế độ chặn (OverrideAction `None`, không có luật con bị nới). Gọi thử: `/` và `/api/v1/products` 200; query có `<script>` 403; `../../etc/passwd` 403. #457 đã đóng.
+  * Còn trong checklist: đặt một đơn test trên prod rồi huỷ; ghi bài học cuối `docs/releases/v1.0.0.md`. `release/v1.0.0` không có bản sửa nào chưa về `develop`.
+* **Dàn ý Blog 3:** chủ đề L9: đặt lại mật khẩu trên Cognito không đăng xuất các thiết bị khác. Dựa trên chuyện thật của nhóm: thử trên dev 11/11 (refresh token cũ vẫn dùng được), sửa bằng trigger Post confirmation gọi `AdminUserGlobalSignOut` (16/11), cố tình làm hỏng trigger (17/11: Cognito đổi mật khẩu trước rồi mới gọi trigger, và trả nguyên lỗi có account ID về trình duyệt), log staging hôm nay. Kèm bảng số liệu để đối chiếu khi viết.
 
 ### Kết quả đạt được tuần 11:
 
 * Nghiệm thu `v1.0.0` trên staging đạt cả 8 ca, kết quả và giới hạn SES sandbox đã ghi vào checklist (#523).
-* `v1.0.0` đã vào `main` và có tag, đang chờ duyệt deploy prod.
+* **`v1.0.0` đã lên prod** (tag, GitHub Release, smoke test xanh); WAF prod chặn đúng bằng core rule set.
 * Lỗi lệch tài khoản giữa 2 tab đã sửa trên `develop` (#515), cùng test MFA hết chập chờn (#521) và 3 bản cập nhật thư viện.
-* Còn lại trong tuần: duyệt deploy prod và kiểm WAF, Blog 3, các phần báo cáo còn trống trước khoảng 29/11.
+* Còn lại trong tuần: đơn test trên prod, viết và đăng Blog 3, các phần báo cáo còn trống trước khoảng 29/11.

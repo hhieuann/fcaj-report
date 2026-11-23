@@ -16,7 +16,7 @@ pre: " <b> 1.11. </b> "
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|--------------------|
-| 2 | - Worked at the office <br> - Reviewed team progress: PRs, issues, release, report <br> - Reminded Hoàng (5.4), Nhân (5.5 screenshots) of the 24/11 deadline <br> - **`v1.0.0` acceptance on staging:** <br>&emsp; + N2 admin cancels an order, checked stock in DynamoDB <br>&emsp; + N3 forgot password, checked the session-revoke trigger logs <br>&emsp; + N6 sign-in with an old session on the device <br> - Recorded acceptance results, added the SES sandbox limitation (#523) <br> - Approved and merged #515 (2-tab bug, closes #508) <br> - Merged #521 (flaky MFA tests) and 3 Dependabot PRs <br> - Fixed #519 (cdk-nag L1 after `aws-cdk-lib` added new runtimes), merged <br> - **Released `v1.0.0`:** <br>&emsp; + #523 into `release/v1.0.0`, staging deploy green <br>&emsp; + #524 `release/v1.0.0` → `main` <br>&emsp; + Tagged `v1.0.0`, prod deploy awaiting approval | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
+| 2 | - Worked at the office <br> - Reviewed team progress: PRs, issues, release, report <br> - Reminded Hoàng (5.4), Nhân (5.5 screenshots) of the 24/11 deadline <br> - **`v1.0.0` acceptance on staging:** <br>&emsp; + N2 admin cancels an order, checked stock in DynamoDB <br>&emsp; + N3 forgot password, checked the session-revoke trigger logs <br>&emsp; + N6 sign-in with an old session on the device <br> - Recorded acceptance results, added the SES sandbox limitation (#523) <br> - Approved and merged #515 (2-tab bug, closes #508) <br> - Merged #521 (flaky MFA tests) and 3 Dependabot PRs <br> - Fixed #519 (cdk-nag L1 after `aws-cdk-lib` added new runtimes), merged <br> - **Released `v1.0.0`:** <br>&emsp; + #523 into `release/v1.0.0`, staging deploy green <br>&emsp; + #524 `release/v1.0.0` → `main` <br>&emsp; + Tagged `v1.0.0`, prod deploy green, checked the prod WAF <br> - Outlined Blog 3 (L9: password reset on Cognito) | 23/11/2026 | 23/11/2026 | [AWS WAF managed rules](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-baseline.html) <br> [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
 
 ### Task details:
 
@@ -36,11 +36,14 @@ pre: " <b> 1.11. </b> "
 * **Released `v1.0.0`:**
   * #523 (acceptance results) reviewed and merged by Hoàng at 11:33; staging deploy `06cf3ac` green.
   * #524 `release/v1.0.0` → `main`: reviewed by Hoàng, merged at 11:42 (`2e78553`), release branch kept.
-  * Tagged `v1.0.0` on `main` and pushed; the Deploy prod workflow is waiting for someone other than An to approve the `production` environment. After deploy: smoke test, check the WAF blocks with the core rule set (close #457), place and cancel a test order on prod.
+  * Tagged `v1.0.0` on `main` and pushed; the Deploy prod workflow waited for the `production` environment approval, given by Hoàng. All steps green (OIDC, `cdk deploy shop-prd`, smoke test), GitHub Release `v1.0.0` created at 11:52.
+  * Checked the prod WAF (`shop-prd-web`, us-east-1): `AWSManagedRulesCommonRuleSet` is blocking (OverrideAction `None`, no rule overrides). Requests: `/` and `/api/v1/products` 200; a query with `<script>` 403; `../../etc/passwd` 403. #457 is closed.
+  * Left in the checklist: place and cancel a test order on prod; write lessons at the end of `docs/releases/v1.0.0.md`. `release/v1.0.0` has no fixes missing from `develop`.
+* **Blog 3 outline:** topic L9: a password reset on Cognito does not sign out other devices. Built on the team's real story: dev test 11/11 (old refresh token still works), the fix with a Post confirmation trigger calling `AdminUserGlobalSignOut` (16/11), breaking the trigger on purpose (17/11: Cognito changes the password before calling the trigger, and returns the raw error with the account ID to the browser), today's staging logs. Includes a fact table to check against while writing.
 
 ### Week 11 Achievements:
 
 * `v1.0.0` acceptance on staging passed all 8 cases; results and the SES sandbox limitation are recorded in the checklist (#523).
-* `v1.0.0` is in `main` and tagged, prod deploy awaiting approval.
+* **`v1.0.0` is live on prod** (tag, GitHub Release, smoke test green); the prod WAF blocks correctly with the core rule set.
 * The account mismatch between 2 tabs is fixed on `develop` (#515), along with the flaky MFA tests (#521) and 3 library updates.
-* Remaining this week: approve the prod deploy and check the WAF, Blog 3, the empty report sections before ~29/11.
+* Remaining this week: a test order on prod, write and post Blog 3, the empty report sections before ~29/11.
