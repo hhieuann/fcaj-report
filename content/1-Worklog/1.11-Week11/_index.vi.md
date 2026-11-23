@@ -16,7 +16,7 @@ pre: " <b> 1.11. </b> "
 
 | Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu |
 |-----|-----------|--------------|-----------------|----------------|
-| 2 | - Làm việc tại văn phòng <br> - Rà tiến độ nhóm: PR, issue, release, báo cáo <br> - Nhắc Hoàng (5.4), Nhân (ảnh 5.5) hạn 24/11 <br> - **Nghiệm thu `v1.0.0` trên staging:** <br>&emsp; + N2 admin huỷ đơn, đối chiếu tồn kho trên DynamoDB <br>&emsp; + N3 quên mật khẩu, kiểm log trigger thu hồi phiên <br>&emsp; + N6 đăng nhập khi máy còn phiên cũ <br> - Ghi kết quả nghiệm thu, thêm giới hạn SES sandbox (#523) <br> - Xem commit Hoàng sửa #515 | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
+| 2 | - Làm việc tại văn phòng <br> - Rà tiến độ nhóm: PR, issue, release, báo cáo <br> - Nhắc Hoàng (5.4), Nhân (ảnh 5.5) hạn 24/11 <br> - **Nghiệm thu `v1.0.0` trên staging:** <br>&emsp; + N2 admin huỷ đơn, đối chiếu tồn kho trên DynamoDB <br>&emsp; + N3 quên mật khẩu, kiểm log trigger thu hồi phiên <br>&emsp; + N6 đăng nhập khi máy còn phiên cũ <br> - Ghi kết quả nghiệm thu, thêm giới hạn SES sandbox (#523) <br> - Duyệt, merge #515 (lỗi 2 tab, đóng #508) <br> - Merge #521 (test MFA chập chờn) và 3 PR Dependabot <br>&emsp; + Để lại #519: cdk-nag báo Lambda chưa dùng runtime mới nhất | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
 
 ### Chi tiết công việc:
 
@@ -28,9 +28,15 @@ pre: " <b> 1.11. </b> "
 * **N3, quên mật khẩu:** đặt lại bằng mã gửi về email, đăng nhập được bằng mật khẩu mới. Log trigger Post confirmation staging 10:24:28 và 10:32:59: "Đã đăng xuất mọi thiết bị sau khi đặt lại mật khẩu", không lỗi. Rút ra: xoá cookie `accessToken` không ép được web làm mới token vì Amplify coi như chưa đăng nhập; muốn thấy `Refresh Token has been revoked` trên trình duyệt thì chờ access token cũ hết hạn (1 giờ). "Máy khác" phải là trình duyệt khác hẳn, vì các cửa sổ ẩn danh Chrome dùng chung cookie.
 * **N6:** đạt cả 3 ca: F5 ở `/orders` không sang `/login` (#500); đang là A đăng nhập B sai mật khẩu thì báo lỗi và A bị đăng xuất, đúng mật khẩu thì vào đúng B (#507).
 * **#523 vào `release/v1.0.0`:** ghi kết quả N1–N8 (đạt cả 8), thêm "SES còn sandbox ở cả 3 môi trường" vào Giới hạn đã biết, đánh dấu xong các bước cắt lại release. Chờ Hoàng hoặc Nhân duyệt.
-* **#515:** commit sửa `8401a92` đúng ý góp ý: tab đang là khách chỉ tải lại, không xoá giỏ khách; có test mới. Duyệt sau khi gắn tag `v1.0.0`.
+* **#515:** commit sửa `8401a92` đúng ý góp ý: tab đang là khách chỉ tải lại, không xoá giỏ khách, khoá gộp và ý định đặt hàng; có test mới, cập nhật `dang-nhap.md`. Duyệt và merge vào `develop` (không ảnh hưởng `release/v1.0.0`), #508 tự đóng; nhờ Hoàng thử trên dev thêm ca 2 tab đều là khách có món trong giỏ.
+* **Các PR còn lại vào `develop`:**
+  * #521 (Hoàng): test trang xác thực hai lớp chỉ chờ lần vẽ đầu 1 giây nên CI chậm thì đỏ ngẫu nhiên; nới lên 5 giây cho các lần chờ vẽ đầu, không đổi code chạy. Merge.
+  * Dependabot #516 (`setup-uv`), #518 (`uv-build`) xanh, merge. #517 (`ruff`) đỏ đúng vì test MFA chập chờn; sau khi Dependabot cập nhật nhánh theo `develop` có #521, chạy lại CI thì xanh, merge. Deploy dev `d62348a` xanh.
+  * #519 (24 thư viện, `aws-cdk-lib` 2.277): job Infra đỏ vì cdk-nag `AwsSolutions-L1` (Lambda chưa dùng runtime mới nhất). Để lại, cần PR riêng nâng runtime hoặc ghi lý do chấp nhận, làm sau `v1.0.0`.
+  * #523 chưa merge được: PR vào `release/*` cần người khác An duyệt.
 
 ### Kết quả đạt được tuần 11:
 
 * Nghiệm thu `v1.0.0` trên staging đạt cả 8 ca, kết quả và giới hạn SES sandbox đã ghi vào checklist (#523, chờ duyệt).
-* Còn lại trong tuần: tag và deploy `v1.0.0` lên prod, merge #515, các phần báo cáo còn trống trước khoảng 29/11.
+* Lỗi lệch tài khoản giữa 2 tab đã sửa trên `develop` (#515), cùng test MFA hết chập chờn (#521) và 3 bản cập nhật thư viện.
+* Còn lại trong tuần: tag và deploy `v1.0.0` lên prod, PR riêng cho #519, các phần báo cáo còn trống trước khoảng 29/11.

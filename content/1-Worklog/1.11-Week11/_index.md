@@ -16,7 +16,7 @@ pre: " <b> 1.11. </b> "
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|--------------------|
-| 2 | - Worked at the office <br> - Reviewed team progress: PRs, issues, release, report <br> - Reminded Hoàng (5.4), Nhân (5.5 screenshots) of the 24/11 deadline <br> - **`v1.0.0` acceptance on staging:** <br>&emsp; + N2 admin cancels an order, checked stock in DynamoDB <br>&emsp; + N3 forgot password, checked the session-revoke trigger logs <br>&emsp; + N6 sign-in with an old session on the device <br> - Recorded acceptance results, added the SES sandbox limitation (#523) <br> - Looked at Hoàng's fix commit for #515 | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
+| 2 | - Worked at the office <br> - Reviewed team progress: PRs, issues, release, report <br> - Reminded Hoàng (5.4), Nhân (5.5 screenshots) of the 24/11 deadline <br> - **`v1.0.0` acceptance on staging:** <br>&emsp; + N2 admin cancels an order, checked stock in DynamoDB <br>&emsp; + N3 forgot password, checked the session-revoke trigger logs <br>&emsp; + N6 sign-in with an old session on the device <br> - Recorded acceptance results, added the SES sandbox limitation (#523) <br> - Approved and merged #515 (2-tab bug, closes #508) <br> - Merged #521 (flaky MFA tests) and 3 Dependabot PRs <br>&emsp; + Left #519: cdk-nag flags Lambdas not on the latest runtime | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
 
 ### Task details:
 
@@ -28,9 +28,15 @@ pre: " <b> 1.11. </b> "
 * **N3, forgot password:** reset with the emailed code, signed in with the new password. Staging Post confirmation trigger logs at 10:24:28 and 10:32:59: "Đã đăng xuất mọi thiết bị sau khi đặt lại mật khẩu", no errors. Lesson: deleting the `accessToken` cookie does not force a token refresh because Amplify treats it as signed out; to see `Refresh Token has been revoked` in the browser, wait for the old access token to expire (1 hour). The "other device" must be a different browser, since Chrome incognito windows share cookies.
 * **N6:** all 3 cases passed: F5 on `/orders` does not go to `/login` (#500); signed in as A, signing in as B with a wrong password shows the error and signs A out, the right password gets into B (#507).
 * **#523 into `release/v1.0.0`:** recorded N1–N8 (all 8 passed), added "SES is still in sandbox in all 3 environments" to Known limitations, ticked the re-cut steps. Waiting for Hoàng or Nhân to review.
-* **#515:** fix commit `8401a92` matches the feedback: a guest tab only reloads and keeps the guest cart; new test added. To be approved after the `v1.0.0` tag.
+* **#515:** fix commit `8401a92` matches the feedback: a guest tab only reloads and keeps the guest cart, merge key and checkout intent; new test, `dang-nhap.md` updated. Approved and merged into `develop` (does not touch `release/v1.0.0`), #508 closed automatically; asked Hoàng to test on dev including 2 guest tabs with items in the cart.
+* **Other PRs into `develop`:**
+  * #521 (Hoàng): the two-factor page tests waited only 1 second for the first render, so a slow CI failed at random; raised to 5 seconds for first-render waits only, no runtime code change. Merged.
+  * Dependabot #516 (`setup-uv`), #518 (`uv-build`) green, merged. #517 (`ruff`) was red from that same flaky MFA test; after Dependabot rebased onto `develop` with #521, CI passed and it was merged. Dev deploy `d62348a` green.
+  * #519 (24 libraries, `aws-cdk-lib` 2.277): Infra job red on cdk-nag `AwsSolutions-L1` (Lambdas not on the latest runtime). Left open; needs a separate PR to upgrade runtimes or record an acknowledgement, after `v1.0.0`.
+  * #523 cannot be merged yet: PRs into `release/*` need someone other than An to review.
 
 ### Week 11 Achievements:
 
 * `v1.0.0` acceptance on staging passed all 8 cases; results and the SES sandbox limitation are recorded in the checklist (#523, awaiting review).
-* Remaining this week: tag and deploy `v1.0.0` to prod, merge #515, the empty report sections before ~29/11.
+* The account mismatch between 2 tabs is fixed on `develop` (#515), along with the flaky MFA tests (#521) and 3 library updates.
+* Remaining this week: tag and deploy `v1.0.0` to prod, a separate PR for #519, the empty report sections before ~29/11.
