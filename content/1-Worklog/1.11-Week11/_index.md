@@ -16,7 +16,7 @@ pre: " <b> 1.11. </b> "
 
 | Day | Task | Start Date | Completion Date | Reference Material |
 |-----|------|------------|-----------------|--------------------|
-| 2 | - Worked at the office <br> - Reviewed team progress: PRs, issues, release, report <br> - Reminded Hoàng (5.4), Nhân (5.5 screenshots) of the 24/11 deadline <br> - **`v1.0.0` acceptance on staging:** <br>&emsp; + N2 admin cancels an order, checked stock in DynamoDB <br>&emsp; + N3 forgot password, checked the session-revoke trigger logs <br>&emsp; + N6 sign-in with an old session on the device <br> - Recorded acceptance results, added the SES sandbox limitation (#523) <br> - Approved and merged #515 (2-tab bug, closes #508) <br> - Merged #521 (flaky MFA tests) and 3 Dependabot PRs <br>&emsp; + Left #519: cdk-nag flags Lambdas not on the latest runtime | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
+| 2 | - Worked at the office <br> - Reviewed team progress: PRs, issues, release, report <br> - Reminded Hoàng (5.4), Nhân (5.5 screenshots) of the 24/11 deadline <br> - **`v1.0.0` acceptance on staging:** <br>&emsp; + N2 admin cancels an order, checked stock in DynamoDB <br>&emsp; + N3 forgot password, checked the session-revoke trigger logs <br>&emsp; + N6 sign-in with an old session on the device <br> - Recorded acceptance results, added the SES sandbox limitation (#523) <br> - Approved and merged #515 (2-tab bug, closes #508) <br> - Merged #521 (flaky MFA tests) and 3 Dependabot PRs <br> - Fixed #519 (cdk-nag L1 after `aws-cdk-lib` added new runtimes), merged <br> - **Released `v1.0.0`:** <br>&emsp; + #523 into `release/v1.0.0`, staging deploy green <br>&emsp; + #524 `release/v1.0.0` → `main` <br>&emsp; + Tagged `v1.0.0`, prod deploy awaiting approval | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
 
 ### Task details:
 
@@ -32,11 +32,15 @@ pre: " <b> 1.11. </b> "
 * **Other PRs into `develop`:**
   * #521 (Hoàng): the two-factor page tests waited only 1 second for the first render, so a slow CI failed at random; raised to 5 seconds for first-render waits only, no runtime code change. Merged.
   * Dependabot #516 (`setup-uv`), #518 (`uv-build`) green, merged. #517 (`ruff`) was red from that same flaky MFA test; after Dependabot rebased onto `develop` with #521, CI passed and it was merged. Dev deploy `d62348a` green.
-  * #519 (24 libraries, `aws-cdk-lib` 2.277): Infra job red on cdk-nag `AwsSolutions-L1` (Lambdas not on the latest runtime). Left open; needs a separate PR to upgrade runtimes or record an acknowledgement, after `v1.0.0`.
-  * #523 cannot be merged yet: PRs into `release/*` need someone other than An to review.
+* **#519 (Dependabot, 24 libraries):** the Infra job was red because `aws-cdk-lib` 2.277 added `nodejs26.x` and `python3.15`, so the cdk-nag rule `AwsSolutions-L1` (latest runtime) flagged all 15 Lambdas on `nodejs24.x` and `python3.14`. Chose an app-wide L1 acknowledgement with a reason in `infra/bin/shop.ts` instead of upgrading runtimes right before the deadline: Node 24 is LTS and matches `.nvmrc`; Python 3.14 matches `data/`; both are still supported by AWS; the runtime upgrade goes in a separate PR tested on dev. Checked locally: synth with cdk-nag passes, 137/137 infra tests, Prettier and ESLint clean; CI green, merged into `develop`.
+* **Released `v1.0.0`:**
+  * #523 (acceptance results) reviewed and merged by Hoàng at 11:33; staging deploy `06cf3ac` green.
+  * #524 `release/v1.0.0` → `main`: reviewed by Hoàng, merged at 11:42 (`2e78553`), release branch kept.
+  * Tagged `v1.0.0` on `main` and pushed; the Deploy prod workflow is waiting for someone other than An to approve the `production` environment. After deploy: smoke test, check the WAF blocks with the core rule set (close #457), place and cancel a test order on prod.
 
 ### Week 11 Achievements:
 
-* `v1.0.0` acceptance on staging passed all 8 cases; results and the SES sandbox limitation are recorded in the checklist (#523, awaiting review).
+* `v1.0.0` acceptance on staging passed all 8 cases; results and the SES sandbox limitation are recorded in the checklist (#523).
+* `v1.0.0` is in `main` and tagged, prod deploy awaiting approval.
 * The account mismatch between 2 tabs is fixed on `develop` (#515), along with the flaky MFA tests (#521) and 3 library updates.
-* Remaining this week: tag and deploy `v1.0.0` to prod, a separate PR for #519, the empty report sections before ~29/11.
+* Remaining this week: approve the prod deploy and check the WAF, Blog 3, the empty report sections before ~29/11.

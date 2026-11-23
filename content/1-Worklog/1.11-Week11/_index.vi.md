@@ -16,7 +16,7 @@ pre: " <b> 1.11. </b> "
 
 | Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu |
 |-----|-----------|--------------|-----------------|----------------|
-| 2 | - Làm việc tại văn phòng <br> - Rà tiến độ nhóm: PR, issue, release, báo cáo <br> - Nhắc Hoàng (5.4), Nhân (ảnh 5.5) hạn 24/11 <br> - **Nghiệm thu `v1.0.0` trên staging:** <br>&emsp; + N2 admin huỷ đơn, đối chiếu tồn kho trên DynamoDB <br>&emsp; + N3 quên mật khẩu, kiểm log trigger thu hồi phiên <br>&emsp; + N6 đăng nhập khi máy còn phiên cũ <br> - Ghi kết quả nghiệm thu, thêm giới hạn SES sandbox (#523) <br> - Duyệt, merge #515 (lỗi 2 tab, đóng #508) <br> - Merge #521 (test MFA chập chờn) và 3 PR Dependabot <br>&emsp; + Để lại #519: cdk-nag báo Lambda chưa dùng runtime mới nhất | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
+| 2 | - Làm việc tại văn phòng <br> - Rà tiến độ nhóm: PR, issue, release, báo cáo <br> - Nhắc Hoàng (5.4), Nhân (ảnh 5.5) hạn 24/11 <br> - **Nghiệm thu `v1.0.0` trên staging:** <br>&emsp; + N2 admin huỷ đơn, đối chiếu tồn kho trên DynamoDB <br>&emsp; + N3 quên mật khẩu, kiểm log trigger thu hồi phiên <br>&emsp; + N6 đăng nhập khi máy còn phiên cũ <br> - Ghi kết quả nghiệm thu, thêm giới hạn SES sandbox (#523) <br> - Duyệt, merge #515 (lỗi 2 tab, đóng #508) <br> - Merge #521 (test MFA chập chờn) và 3 PR Dependabot <br> - Sửa #519 (cdk-nag L1 khi `aws-cdk-lib` có runtime mới), merge <br> - **Phát hành `v1.0.0`:** <br>&emsp; + #523 vào `release/v1.0.0`, deploy staging xanh <br>&emsp; + #524 `release/v1.0.0` → `main` <br>&emsp; + Gắn tag `v1.0.0`, Deploy prod chờ duyệt | 23/11/2026 | 23/11/2026 | [TransactWriteItems](https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_TransactWriteItems.html) <br> [AdminUserGlobalSignOut](https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminUserGlobalSignOut.html) <br> [Amplify token refresh](https://docs.amplify.aws/react/build-a-backend/auth/connect-your-frontend/manage-user-sessions/) |
 
 ### Chi tiết công việc:
 
@@ -32,11 +32,15 @@ pre: " <b> 1.11. </b> "
 * **Các PR còn lại vào `develop`:**
   * #521 (Hoàng): test trang xác thực hai lớp chỉ chờ lần vẽ đầu 1 giây nên CI chậm thì đỏ ngẫu nhiên; nới lên 5 giây cho các lần chờ vẽ đầu, không đổi code chạy. Merge.
   * Dependabot #516 (`setup-uv`), #518 (`uv-build`) xanh, merge. #517 (`ruff`) đỏ đúng vì test MFA chập chờn; sau khi Dependabot cập nhật nhánh theo `develop` có #521, chạy lại CI thì xanh, merge. Deploy dev `d62348a` xanh.
-  * #519 (24 thư viện, `aws-cdk-lib` 2.277): job Infra đỏ vì cdk-nag `AwsSolutions-L1` (Lambda chưa dùng runtime mới nhất). Để lại, cần PR riêng nâng runtime hoặc ghi lý do chấp nhận, làm sau `v1.0.0`.
-  * #523 chưa merge được: PR vào `release/*` cần người khác An duyệt.
+* **#519 (Dependabot, 24 thư viện):** job Infra đỏ vì `aws-cdk-lib` 2.277 thêm runtime `nodejs26.x`, `python3.15`, nên luật cdk-nag `AwsSolutions-L1` (runtime phải mới nhất) báo cả 15 Lambda đang dùng `nodejs24.x`, `python3.14`. Chọn ghi lý do chấp nhận L1 cho cả app trong `infra/bin/shop.ts` thay vì nâng runtime sát hạn nộp: Node 24 là LTS, khớp `.nvmrc`; Python 3.14 khớp `data/`; cả hai còn được AWS hỗ trợ; nâng runtime để PR riêng có thử trên dev. Thử trên máy: synth có cdk-nag qua, 137/137 test infra, Prettier, ESLint sạch; CI xanh, merge vào `develop`.
+* **Phát hành `v1.0.0`:**
+  * #523 (kết quả nghiệm thu) Hoàng duyệt và merge 11:33; deploy staging `06cf3ac` xanh.
+  * #524 `release/v1.0.0` → `main`: Hoàng duyệt, merge 11:42 (`2e78553`), giữ nhánh release.
+  * Gắn tag `v1.0.0` trên `main` và đẩy lên; workflow Deploy prod chạy và chờ một người khác An duyệt environment `production`. Deploy xong: kiểm smoke test, WAF chặn bằng core rule set (đóng #457), đặt một đơn test trên prod rồi huỷ.
 
 ### Kết quả đạt được tuần 11:
 
-* Nghiệm thu `v1.0.0` trên staging đạt cả 8 ca, kết quả và giới hạn SES sandbox đã ghi vào checklist (#523, chờ duyệt).
+* Nghiệm thu `v1.0.0` trên staging đạt cả 8 ca, kết quả và giới hạn SES sandbox đã ghi vào checklist (#523).
+* `v1.0.0` đã vào `main` và có tag, đang chờ duyệt deploy prod.
 * Lỗi lệch tài khoản giữa 2 tab đã sửa trên `develop` (#515), cùng test MFA hết chập chờn (#521) và 3 bản cập nhật thư viện.
-* Còn lại trong tuần: tag và deploy `v1.0.0` lên prod, PR riêng cho #519, các phần báo cáo còn trống trước khoảng 29/11.
+* Còn lại trong tuần: duyệt deploy prod và kiểm WAF, Blog 3, các phần báo cáo còn trống trước khoảng 29/11.
