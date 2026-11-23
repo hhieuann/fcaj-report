@@ -24,8 +24,8 @@ The workshop was written by the whole team: An (5.1, 5.2, 5.3, 5.6, 5.7), Hoàng
 1. [Introduction](5.1-introduction/)
 2. [Prerequisites](5.2-prerequisite/)
 3. [Deploying the Infrastructure](5.3-infrastructure/)
-4. Sales flow
-5. Recommendations and data security
+4. [Sales Flow](5.4-salesflow/)
+5. [Recommendations and Data Security](5.5-recommendations/)
 6. [Testing and Operations](5.6-testing/)
 7. [Clean Up](5.7-cleanup/)
 

@@ -24,8 +24,8 @@ Workshop do cả nhóm viết: An (5.1, 5.2, 5.3, 5.6, 5.7), Hoàng (5.4), Nhân
 1. [Giới thiệu](5.1-introduction/)
 2. [Chuẩn bị](5.2-prerequisite/)
 3. [Triển khai hạ tầng](5.3-infrastructure/)
-4. Luồng bán hàng
-5. Gợi ý và bảo mật dữ liệu
+4. [Luồng bán hàng](5.4-salesflow/)
+5. [Gợi ý và bảo mật dữ liệu](5.5-recommendations/)
 6. [Kiểm thử và vận hành](5.6-testing/)
 7. [Dọn dẹp](5.7-cleanup/)
 

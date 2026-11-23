@@ -32,8 +32,8 @@ Shop nhỏ bán laptop và linh kiện máy tính không có người tư vấn 
 |---|---|
 | [5.2 Chuẩn bị](../5.2-prerequisite/) | Chuẩn bị tài khoản, công cụ, CDK bootstrap, budget cảnh báo, khoá HMAC; biết lab tốn bao nhiêu |
 | [5.3 Triển khai hạ tầng](../5.3-infrastructure/) | Deploy toàn bộ shop-ai lên sandbox của bạn bằng một lệnh CDK, mở web và đăng nhập |
-| 5.4 Luồng bán hàng | Đặt hàng không mất, không trùng: giao dịch DynamoDB, `Idempotency-Key`, SQS, DLQ, email SES |
-| 5.5 Gợi ý và bảo mật dữ liệu | Sinh dữ liệu và đánh giá mô hình trên máy, chạy pipeline gợi ý trên AWS, ẩn danh dữ liệu người dùng, thí nghiệm đầu độc gợi ý |
+| [5.4 Luồng bán hàng](../5.4-salesflow/) | Đặt hàng không mất, không trùng: giao dịch DynamoDB, `Idempotency-Key`, SQS, DLQ, email SES |
+| [5.5 Gợi ý và bảo mật dữ liệu](../5.5-recommendations/) | Sinh dữ liệu và đánh giá mô hình trên máy, chạy pipeline gợi ý trên AWS, ẩn danh dữ liệu người dùng, thí nghiệm đầu độc gợi ý |
 | [5.6 Kiểm thử và vận hành](../5.6-testing/) | Lần theo một đơn bằng CloudWatch Logs Insights và X-Ray, đọc alarm và runbook, xử lý một sự cố DLQ thật; xem số đo hiệu năng của nhóm |
 | [5.7 Dọn dẹp](../5.7-cleanup/) | Xoá từng stack, log group và khoá còn sót, hôm sau kiểm tra Billing |
 

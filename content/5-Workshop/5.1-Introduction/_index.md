@@ -32,8 +32,8 @@ A small shop selling laptops and PC parts has nobody to advise "if you buy this,
 |---|---|
 | [5.2 Prerequisites](../5.2-prerequisite/) | Prepare the account, tools, CDK bootstrap, budget alerts and the HMAC key; know what the lab costs |
 | [5.3 Deploying the Infrastructure](../5.3-infrastructure/) | Deploy all of shop-ai to your own sandbox with one CDK command, open the site and sign in |
-| 5.4 Sales flow | Orders that are never lost or duplicated: a DynamoDB transaction, `Idempotency-Key`, SQS, DLQ, SES email |
-| 5.5 Recommendations and data security | Generate data and evaluate the model locally, run the recommendation pipeline on AWS, anonymize user data, run the recommendation poisoning experiment |
+| [5.4 Sales Flow](../5.4-salesflow/) | Orders that are never lost or duplicated: a DynamoDB transaction, `Idempotency-Key`, SQS, DLQ, SES email |
+| [5.5 Recommendations and Data Security](../5.5-recommendations/) | Generate data and evaluate the model locally, run the recommendation pipeline on AWS, anonymize user data, run the recommendation poisoning experiment |
 | [5.6 Testing and Operations](../5.6-testing/) | Trace an order with CloudWatch Logs Insights and X-Ray, read alarms and runbooks, handle a real DLQ incident; see the team's performance numbers |
 | [5.7 Clean Up](../5.7-cleanup/) | Delete each stack, leftover log groups and keys, check Billing the next day |
 
