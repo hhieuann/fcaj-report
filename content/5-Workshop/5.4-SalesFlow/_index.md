@@ -20,10 +20,9 @@ After this chapter you will:
 
 ### 5.4.1. Sales flow architecture
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 01. Sales flow diagram, drawn by hand in draw.io with AWS icons (AI-drawn diagrams are not allowed): Web (CloudFront) → API Gateway (Cognito JWT) → `ordering` Lambda → DynamoDB `products`, `carts`, `orders`, `order-idempotency` (one transaction) → SQS orders queue (DLQ after 3 failures) → `order-processor` Lambda → SES (customer email) and SNS `order-confirmed` → the `events` module's SQS queue; the admin Lambda reads the `byStatus` index of `orders`.
-{{% /notice %}}
+![Sales flow diagram](01-so-do.png)
+*Figure 01. Sales flow diagram: Web (CloudFront) → API Gateway (Cognito JWT) → `ordering` Lambda → DynamoDB `products`, `carts`, `orders`, `order-idempotency` (one transaction) → SQS orders queue (DLQ after 3 failures) → `order-processor` Lambda → SES (customer email) and SNS `order-confirmed` → the `events` module's SQS queue; the admin Lambda reads the `byStatus` index of `orders`.*
+[draw.io source](01-so-do.drawio)
 
 | Component | Purpose | Notable settings (`infra/lib/api-stack.ts`) |
 |---|---|---|
@@ -56,13 +55,13 @@ The API sets `PENDING`, the worker sets `CONFIRMED`, the admin sets `SHIPPED` an
 STACK=shop-sbx-<name>-api
 aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl' || OutputKey=='OrdersTableName' || OutputKey=='OrdersQueueUrl' || OutputKey=='UserPoolId' || OutputKey=='UserPoolE2eClientId'].[OutputKey,OutputValue]" \
-  --output table
+  --output text \
+  | sed -E 's/[0-9]{12}/<account-id>/g; s/(ap-southeast-1_)[A-Za-z0-9]+/\1xxxxxxxx/g' \
+  | awk -F'\t' '{printf "%-21s %s\n", $1, $2}'
 ```
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 02. The stack outputs (blur the account ID in the queue URL and the user pool ID).
-{{% /notice %}}
+![API stack outputs](02-stack-outputs.png)
+*Figure 02. The API stack outputs; the command replaced the account ID with `<account-id>` and masked the user pool ID.*
 
 #### Turn on SES email for the worker
 
@@ -83,10 +82,8 @@ The worker sends email only when the deploy passes a sender address (`-c senderE
    pnpm --filter infra exec cdk deploy shop-sbx-<name>-api -c env=sbx -c owner=<name> -c senderEmail=<your email>
    ```
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 03. The identity shown as Verified in SES (blur the email).
-{{% /notice %}}
+![SES identity shown as Verified](03-ses-verified.png)
+*Figure 03. The identity shown as Verified in SES.*
 
 ### 5.4.3. Add to cart
 
@@ -96,17 +93,13 @@ The worker sends email only when the deploy passes a sender address (`-c senderE
 2. Sign in. The web app calls `POST /api/v1/cart/merge` (with an `Idempotency-Key`) to merge the guest cart into the account cart, then clears the guest cart.
 3. Add another product and open **Giỏ hàng** (Cart).
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 04. Cart page with 2 products, signed in.
-{{% /notice %}}
+![Cart page with 2 products](04-gio-hang.png)
+*Figure 04. Cart page with 2 products, signed in.*
 
 **Check:** Console → **DynamoDB** → the `...CartsTable...` table of `shop-sbx-<name>-api` → **Explore items**. There is one item whose `userId` is your Cognito `sub`, with an `items` list of `{ productId, quantity, addedPrice, addedAt }` and a `version`.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 05. The cart item in the `carts` table (blur `userId`).
-{{% /notice %}}
+![Cart item in the carts table](05-carts-item.png)
+*Figure 05. The cart item in the `carts` table.*
 
 ### 5.4.4. Place an order
 
@@ -116,11 +109,11 @@ The worker sends email only when the deploy passes a sender address (`-c senderE
 2. Fill in name, phone, address and province (fake data), click **Xác nhận đặt hàng** (Confirm order).
 3. The web app opens the order detail page. The status starts as "Chờ xác nhận" (`PENDING`); reload a few seconds later and it shows "Đã xác nhận" (`CONFIRMED`), set by the worker.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 06. The checkout page before confirming (fake data).
-- 07. The order detail page showing "Đã xác nhận".
-{{% /notice %}}
+![Checkout page](06-dat-hang.png)
+*Figure 06. The checkout page before confirming (fake data).*
+
+![Confirmed order detail](07-don-da-xac-nhan.png)
+*Figure 07. The order detail page showing "Đã xác nhận".*
 
 **Check in DynamoDB:**
 
@@ -133,10 +126,8 @@ The worker sends email only when the deploy passes a sender address (`-c senderE
 
 All of these changes (decrementing stock, writing the order, removing the item from the cart, incrementing `#OPEN`, writing the marker) happen in **one** `TransactWriteItems`: either all of them happen or nothing changes. The stock decrement has the condition `stock >= quantity`, so when two customers buy the last unit at the same time only one succeeds; the other gets 409 `OUT_OF_STOCK` and stock never goes negative.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 08. The three items in `orders`: the order, `#OPEN`, `#KEY#…` (blur `userId`, name, phone, address).
-{{% /notice %}}
+![Three items in the orders table](08-orders-3-item.png)
+*Figure 08. The three items in `orders`: the order, `#OPEN`, `#KEY#…`.*
 
 ### 5.4.5. Click twice, still one order (`Idempotency-Key`)
 
@@ -162,10 +153,10 @@ The web app generates a UUID for each checkout and sends **the same UUID** again
    echo "$P"
    ```
 
-3. Build the request body and a key, then send it **twice** with the same key:
+3. Build the request body and a key, then send it **twice** with the same key. The key command adds `command` so Git Bash does not run `node` through winpty (which fails when the output is captured into a variable):
 
    ```bash
-   KEY=$(uuidgen 2>/dev/null || python -c "import uuid; print(uuid.uuid4())")
+   KEY=$(command node -e "console.log(crypto.randomUUID())")
    BODY=$(jq -n --argjson p "$P" '{
      items: [{ productId: $p.productId, quantity: 1, expectedPrice: $p.price }],
      shippingAddress: { fullName: "Test Customer", phone: "0912345678", address: "1 Test Street", province: "Ha Noi" }
@@ -182,10 +173,16 @@ The web app generates a UUID for each checkout and sends **the same UUID** again
 
 4. Send the same key again but change `quantity` to 2: you get `422` with code `IDEMPOTENCY_KEY_REUSED` (same key, different content is a client error; no order is created).
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 09. The two calls (201 then 200, same `orderId`) and the different-content call (422). Blur the token if visible.
-{{% /notice %}}
+   ```bash
+   BODY2=$(echo "$BODY" | jq '.items[0].quantity = 2')
+   curl -s -w '\n%{http_code}\n' -X POST "$API/api/v1/orders" \
+     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+     -H "Idempotency-Key: $KEY" -d "$BODY2" |
+     { read -r body; read -r code; echo "HTTP $code code=$(echo "$body" | jq -r .code)"; }
+   ```
+
+![Same Idempotency-Key sent twice](09-idempotency.png)
+*Figure 09. The two calls (201 then 200, same `orderId`) and the different-content call (422).*
 
 How the server does it (ADR-0017, `docs/business/ordering.md` BR-04): Powertools Idempotency stores the result per key in `order-idempotency` for 24 hours; on top of that, the `#KEY#…` marker is written **in the same transaction** as the order, so even if the Lambda is cut off right after the transaction succeeds, a retry still finds the existing order instead of creating a new one.
 
@@ -200,7 +197,7 @@ You just created a real order in your sandbox. Cancel it in section 5.4.9 or on 
 Resend the request from section 5.4.5 with a wrong `expectedPrice` and a new key:
 
 ```bash
-KEY=$(uuidgen 2>/dev/null || python -c "import uuid; print(uuid.uuid4())")
+KEY=$(command node -e "console.log(crypto.randomUUID())")
 BAD=$(echo "$BODY" | jq '.items[0].expectedPrice -= 1000')
 curl -s -X POST "$API/api/v1/orders" -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" -H "Idempotency-Key: $KEY" -d "$BAD" | jq
@@ -208,10 +205,8 @@ curl -s -X POST "$API/api/v1/orders" -H "Authorization: Bearer $TOKEN" \
 
 **Expected:** `409`, `code` is `PRICE_CHANGED`, and `changedItems` has `expectedPrice` (what you sent) and `currentPrice` (the real price). No new order, stock unchanged. On the web app, the checkout page shows the new price so the customer can review and confirm again.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 10. The 409 `PRICE_CHANGED` response.
-{{% /notice %}}
+![409 PRICE_CHANGED response](10-price-changed.png)
+*Figure 10. The 409 `PRICE_CHANGED` response.*
 
 Other business errors of `POST /api/v1/orders` (all `application/problem+json`):
 
@@ -227,20 +222,22 @@ Other business errors of `POST /api/v1/orders` (all `application/problem+json`):
 
 **Goal:** see SQS keep an order while the worker is paused, and the worker continue when resumed.
 
-The API only writes the `PENDING` order and pushes `{ orderId, userId, correlationId }` to the queue; the customer gets a response right away without waiting for the email. The worker does the rest later.
+The API only writes the `PENDING` order and pushes `{ orderId, userId, type: "PLACED", correlationId }` to the queue (`type` is `CANCELLED` for a cancelled order); the customer gets a response right away without waiting for the email. The worker does the rest later.
 
 1. Console → **Lambda** → function `shop-sbx-<name>-api-OrderProcessorFunction…` → **Configuration** → **Triggers** → select the SQS trigger → **Edit** → untick **Activate trigger** → **Save**.
 2. Place an order on the web app. The order detail page stays at "Chờ xác nhận", even after reloading.
-3. Console → **SQS** → queue `…-OrdersQueue…` → **Send and receive messages** → **Poll for messages**. Open the message: it has only `orderId`, `userId`, `correlationId`, no address or phone number.
+3. Console → **SQS** → queue `…-OrdersQueue…` → **Send and receive messages** → **Poll for messages**. Open the message: the body has only `orderId`, `userId`, `type` (`PLACED`), `correlationId`, no address or phone number; `correlationId` is also in the **Attributes** tab (a message attribute).
    Note: polling hides the message for 60 seconds (visibility timeout); **do not click Delete**.
 4. Turn the trigger back on (**Activate trigger** → **Save**). Within a minute the order shows "Đã xác nhận" and the confirmation email arrives.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 11. The SQS trigger shown as Disabled.
-- 12. The message in the orders queue while the worker is off (blur `userId`).
-- 13. The order switching to "Đã xác nhận" after the trigger is back on.
-{{% /notice %}}
+![SQS trigger shown as Disabled](11-trigger-disabled.png)
+*Figure 11. The SQS trigger shown as Disabled.*
+
+![Message in the orders queue](12-tin-sqs.png)
+*Figure 12. The message in the orders queue while the worker is off.*
+
+![Order confirmed after re-enabling the trigger](13-don-c-da-xac-nhan.png)
+*Figure 13. The order switching to "Đã xác nhận" after the trigger is back on.*
 
 **Check the worker log:** **CloudWatch** → **Logs Insights**, log group `…-OrderProcessorLogs…`:
 
@@ -252,10 +249,8 @@ fields @timestamp, level, message, orderId
 
 The `correlationId` flows from the API to the worker; the log has no email, phone number or address.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 14. The worker's Logs Insights result.
-{{% /notice %}}
+![Worker Logs Insights result](14-logs-insights.png)
+*Figure 14. The worker's Logs Insights result.*
 
 If one message fails 3 times in a row (e.g. a wrong IAM permission, an SNS error), SQS moves it to `…-OrdersDeadLetterQueue…` and the order stays `PENDING`, not lost. Step-by-step handling is in `docs/runbooks/dlq-orders.md`. In prod, the `orders-dlq` alarm fires when the DLQ has a message.
 
@@ -266,11 +261,11 @@ If one message fails 3 times in a row (e.g. a wrong IAM permission, an SNS error
 1. Open the inbox of the verified address: there is a confirmation email with the order ID, name × quantity, total, cash on delivery, free shipping. It deliberately has no name, address, phone number or link.
 2. `...OrderIdempotencyTable...` table → **Explore items**: there is a new item whose `id` starts with the worker function name (`…OrderProcessorFunction…`), with `status` = `COMPLETED` and `expiration` (24 hours later). The email's dedup key is the `userId` plus `<orderId>#CONFIRMED`; Powertools stores the key as a hash, so the order ID is not readable in `id`. SQS delivers "at least once", so the worker may receive the same message twice; the second time it finds this `COMPLETED` record and does not send the email again.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 15. The order confirmation email (blur the email address).
-- 16. The worker's item in `order-idempotency` (`id` starting with `…OrderProcessorFunction…`, `status` = `COMPLETED`).
-{{% /notice %}}
+![Order confirmation email](15-email-xac-nhan.png)
+*Figure 15. The order confirmation email.*
+
+![Worker item in order-idempotency](16-idempotency-email.png)
+*Figure 16. The worker's item in `order-idempotency` (`id` starting with `…OrderProcessorFunction…`, `status` = `COMPLETED`).*
 
 The worker works in this order (`docs/business/ordering.md`, SQS flow):
 
@@ -295,12 +290,14 @@ If SES rejects the email (e.g. the recipient is not verified in the sandbox), th
 
    It returns `409` with code `CANNOT_CANCEL`; stock is not added back a second time (the cancel transaction is conditional on the current status).
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 17. The cancelled order detail page.
-- 18. The cancellation email (blur the email address).
-- 19. The 409 `CANNOT_CANCEL` response on the second cancel.
-{{% /notice %}}
+![Cancelled order detail](17-don-da-huy.png)
+*Figure 17. The cancelled order detail page.*
+
+![Cancellation email](18-email-huy.png)
+*Figure 18. The cancellation email.*
+
+![409 CANNOT_CANCEL response](19-cannot-cancel.png)
+*Figure 19. The 409 `CANNOT_CANCEL` response on the second cancel.*
 
 ### 5.4.10. Admin moves the order through delivery
 
@@ -313,18 +310,22 @@ If SES rejects the email (e.g. the recipient is not verified in the sandbox), th
      --user-pool-id <UserPoolId> --username <your email> --group-name admin
    ```
 
+   If the command returns `UserNotFoundException`, pass your `userId` (the account's `sub`) to `--username` instead of the email.
+
 2. Sign out and sign back in on the web app so the new token carries the `admin` group. The account menu now shows "Trang quản trị" (Admin page).
 3. Open `/admin`. Admin accounts must turn on two-factor authentication: if it is off, the web app sends you to the setup page; follow it (scan the QR code with an authenticator app), then return to `/admin`.
 4. Place a new order (with a normal account or this one) and wait for "Đã xác nhận".
 5. Tab **Chờ giao** (Awaiting shipment) → **Chuyển sang Đang giao** (Move to shipping) → confirm. The order moves to the **Đang giao** tab; `openOrders` goes down by 1 (the goods have left the warehouse, so the customer can order again).
 6. Tab **Đang giao** → **Đã giao** (Delivered). The customer's order page shows "Đã giao".
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 20. The `/admin` page, Awaiting shipment tab, with the newly confirmed order.
-- 21. The confirmation dialog for moving to shipping.
-- 22. The customer's order detail page showing "Đã giao".
-{{% /notice %}}
+![Admin page, Awaiting shipment tab](20-admin-cho-giao.png)
+*Figure 20. The `/admin` page, Awaiting shipment tab, with the newly confirmed order.*
+
+![Move to shipping dialog](21-hop-thoai-dang-giao.png)
+*Figure 21. The confirmation dialog for moving to shipping.*
+
+![Delivered order detail](22-don-da-giao.png)
+*Figure 22. The customer's order detail page showing "Đã giao".*
 
 **Check the permission:** call the admin API with the token of an account **not** in the `admin` group:
 
@@ -336,20 +337,21 @@ It returns `403`. Without a token, `401`. The permission is checked in the backe
 
 ### 5.4.11. Cost of this part
 
-TODO (Hoàng): fill in figures from the demo account's Cost Explorer after running the lab (filter by service as in 5.2); the repo has no measured cost for the sales flow alone. Services involved:
+Measured on the author's sandbox account, running the lab from 22 to 24/11/2026: Cost Explorer (Credits excluded) shows 0 USD for every service, within the free tier. Running the lab for a few hours and then deleting it costs almost nothing; if you leave the stacks running for long, check Billing again.
 
-| Service | Use in this part | Estimate per month |
+| Service | Use in this part | Measured in the lab |
 |---|---|---|
-| Lambda `ordering`, `order-processor`, admin | A few dozen invocations in the lab | TODO |
-| DynamoDB `carts`, `orders`, `order-idempotency` | On-demand, a few hundred reads and writes; `orders` has point-in-time recovery | TODO |
-| SQS orders queue and DLQ | A few dozen messages | TODO |
-| SES | A few emails (sandbox) | TODO |
-| SNS `order-confirmed` | A few messages | TODO |
+| Lambda `ordering`, `order-processor`, admin | A few dozen invocations in the lab | $0 (within the free tier) |
+| DynamoDB `carts`, `orders`, `order-idempotency` | On-demand, a few hundred reads and writes; `orders` has point-in-time recovery | $0 (within the free tier) |
+| SQS orders queue and DLQ | A few dozen messages | $0 (within the free tier) |
+| SES | A few emails (sandbox) | $0 (within the free tier) |
+| SNS `order-confirmed` | A few messages | $0 (within the free tier) |
 
-{{% notice warning %}}
-**Screenshots to add:**
-- 23. Cost Explorer, **Group by: Service** as in 5.2.
-{{% /notice %}}
+![Cost Explorer by service](23-cost-explorer.png)
+*Figure 23. Cost Explorer, **Group by: Service** as in 5.2.*
+
+![Free plan page](23b-free-tier.png)
+*Figure 23b. Free plan page: the account is still on the free plan.*
 
 ### 5.4.12. Clean up
 

@@ -20,10 +20,9 @@ Sau chương này bạn sẽ:
 
 ### 5.4.1. Kiến trúc phần bán hàng
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 01. Sơ đồ luồng bán hàng, tự vẽ bằng draw.io với icon AWS (không dùng sơ đồ do AI vẽ): Web (CloudFront) → API Gateway (JWT Cognito) → Lambda `ordering` → DynamoDB `products`, `carts`, `orders`, `order-idempotency` (một giao dịch) → SQS hàng đợi đơn (DLQ sau 3 lần lỗi) → Lambda `order-processor` → SES (email cho khách) và SNS `order-confirmed` → SQS của module `events`; Lambda admin đọc index `byStatus` của `orders`.
-{{% /notice %}}
+![Sơ đồ luồng bán hàng](01-so-do.png)
+*Ảnh 01. Sơ đồ luồng bán hàng: Web (CloudFront) → API Gateway (JWT Cognito) → Lambda `ordering` → DynamoDB `products`, `carts`, `orders`, `order-idempotency` (một giao dịch) → SQS hàng đợi đơn (DLQ sau 3 lần lỗi) → Lambda `order-processor` → SES (email cho khách) và SNS `order-confirmed` → SQS của module `events`; Lambda admin đọc index `byStatus` của `orders`.*
+[Nguồn draw.io](01-so-do.drawio)
 
 | Thành phần | Dùng làm gì | Cấu hình đáng chú ý (`infra/lib/api-stack.ts`) |
 |---|---|---|
@@ -56,13 +55,13 @@ PENDING ──► CONFIRMED ──► SHIPPED ──► DELIVERED
 STACK=shop-sbx-<tên>-api
 aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl' || OutputKey=='OrdersTableName' || OutputKey=='OrdersQueueUrl' || OutputKey=='UserPoolId' || OutputKey=='UserPoolE2eClientId'].[OutputKey,OutputValue]" \
-  --output table
+  --output text \
+  | sed -E 's/[0-9]{12}/<account-id>/g; s/(ap-southeast-1_)[A-Za-z0-9]+/\1xxxxxxxx/g' \
+  | awk -F'\t' '{printf "%-21s %s\n", $1, $2}'
 ```
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 02. Bảng output của stack (làm mờ account ID trong URL hàng đợi và ID user pool).
-{{% /notice %}}
+![Output của stack API](02-stack-outputs.png)
+*Ảnh 02. Output của stack API; lệnh đã thay account ID bằng `<account-id>` và che ID user pool.*
 
 #### Bật email SES cho worker
 
@@ -83,10 +82,8 @@ Worker chỉ gửi email khi lúc deploy có truyền địa chỉ gửi (`-c se
    pnpm --filter infra exec cdk deploy shop-sbx-<tên>-api -c env=sbx -c owner=<tên> -c senderEmail=<email của bạn>
    ```
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 03. Identity ở trạng thái Verified trong SES (làm mờ email).
-{{% /notice %}}
+![Identity SES ở trạng thái Verified](03-ses-verified.png)
+*Ảnh 03. Identity ở trạng thái Verified trong SES.*
 
 ### 5.4.3. Thêm vào giỏ
 
@@ -96,17 +93,13 @@ Worker chỉ gửi email khi lúc deploy có truyền địa chỉ gửi (`-c se
 2. Đăng nhập. Web gọi `POST /api/v1/cart/merge` (có `Idempotency-Key`) để gộp giỏ khách vào giỏ tài khoản, rồi xoá giỏ khách.
 3. Thêm một sản phẩm khác, mở **Giỏ hàng**.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 04. Trang giỏ hàng có 2 sản phẩm, đã đăng nhập.
-{{% /notice %}}
+![Trang giỏ hàng có 2 sản phẩm](04-gio-hang.png)
+*Ảnh 04. Trang giỏ hàng có 2 sản phẩm, đã đăng nhập.*
 
 **Kiểm tra:** Console → **DynamoDB** → bảng `...CartsTable...` của stack `shop-sbx-<tên>-api` → **Explore items**. Có một item với `userId` là `sub` Cognito của bạn, thuộc tính `items` là danh sách `{ productId, quantity, addedPrice, addedAt }` và `version`.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 05. Item giỏ trong bảng `carts` (làm mờ `userId`).
-{{% /notice %}}
+![Item giỏ trong bảng carts](05-carts-item.png)
+*Ảnh 05. Item giỏ trong bảng `carts`.*
 
 ### 5.4.4. Đặt hàng
 
@@ -116,11 +109,11 @@ Worker chỉ gửi email khi lúc deploy có truyền địa chỉ gửi (`-c se
 2. Điền họ tên, số điện thoại, địa chỉ, tỉnh/thành (dữ liệu giả), bấm **Xác nhận đặt hàng**.
 3. Web chuyển sang trang chi tiết đơn. Trạng thái đầu là "Chờ xác nhận" (`PENDING`), vài giây sau tải lại thì thành "Đã xác nhận" (`CONFIRMED`) do worker.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 06. Trang đặt hàng trước khi bấm xác nhận (dữ liệu giả).
-- 07. Trang chi tiết đơn ở trạng thái "Đã xác nhận".
-{{% /notice %}}
+![Trang đặt hàng](06-dat-hang.png)
+*Ảnh 06. Trang đặt hàng trước khi bấm xác nhận (dữ liệu giả).*
+
+![Chi tiết đơn đã xác nhận](07-don-da-xac-nhan.png)
+*Ảnh 07. Trang chi tiết đơn ở trạng thái "Đã xác nhận".*
 
 **Kiểm tra trong DynamoDB:**
 
@@ -133,10 +126,8 @@ Worker chỉ gửi email khi lúc deploy có truyền địa chỉ gửi (`-c se
 
 Các thay đổi này (trừ kho, ghi đơn, bỏ món khỏi giỏ, tăng `#OPEN`, ghi item đánh dấu) nằm trong **một** `TransactWriteItems`: hoặc tất cả cùng xảy ra, hoặc không có gì thay đổi. Lệnh trừ kho có điều kiện `stock >= quantity`, nên hai khách cùng mua món cuối cùng thì chỉ một người được, người kia nhận 409 `OUT_OF_STOCK` và kho không bao giờ âm.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 08. Ba item trong bảng `orders`: đơn, `#OPEN`, `#KEY#…` (làm mờ `userId`, họ tên, SĐT, địa chỉ).
-{{% /notice %}}
+![Ba item trong bảng orders](08-orders-3-item.png)
+*Ảnh 08. Ba item trong bảng `orders`: đơn, `#OPEN`, `#KEY#…`.*
 
 ### 5.4.5. Bấm hai lần vẫn một đơn (`Idempotency-Key`)
 
@@ -162,10 +153,10 @@ Web sinh một UUID cho mỗi lượt đặt hàng và gửi lại **đúng UUID
    echo "$P"
    ```
 
-3. Tạo thân yêu cầu và một khoá, rồi gửi **hai lần** với cùng khoá:
+3. Tạo thân yêu cầu và một khoá, rồi gửi **hai lần** với cùng khoá. Lệnh tạo khoá có thêm `command` để Git Bash không chạy `node` qua winpty (lấy kết quả vào biến sẽ lỗi):
 
    ```bash
-   KEY=$(uuidgen 2>/dev/null || python -c "import uuid; print(uuid.uuid4())")
+   KEY=$(command node -e "console.log(crypto.randomUUID())")
    BODY=$(jq -n --argjson p "$P" '{
      items: [{ productId: $p.productId, quantity: 1, expectedPrice: $p.price }],
      shippingAddress: { fullName: "Khach Thu", phone: "0912345678", address: "1 Duong Thu", province: "Ha Noi" }
@@ -182,10 +173,16 @@ Web sinh một UUID cho mỗi lượt đặt hàng và gửi lại **đúng UUID
 
 4. Gửi lại cùng khoá nhưng đổi `quantity` thành 2: trả `422` mã `IDEMPOTENCY_KEY_REUSED` (cùng khoá mà khác nội dung là lỗi của client, không tạo đơn).
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 09. Kết quả hai lần gửi (201 rồi 200, cùng `orderId`) và lần gửi khác nội dung (422). Làm mờ token nếu có trên màn hình.
-{{% /notice %}}
+   ```bash
+   BODY2=$(echo "$BODY" | jq '.items[0].quantity = 2')
+   curl -s -w '\n%{http_code}\n' -X POST "$API/api/v1/orders" \
+     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+     -H "Idempotency-Key: $KEY" -d "$BODY2" |
+     { read -r body; read -r code; echo "HTTP $code code=$(echo "$body" | jq -r .code)"; }
+   ```
+
+![Gửi cùng Idempotency-Key](09-idempotency.png)
+*Ảnh 09. Kết quả hai lần gửi (201 rồi 200, cùng `orderId`) và lần gửi khác nội dung (422).*
 
 Cách server làm (ADR-0017, `docs/business/ordering.md` BR-04): Powertools Idempotency lưu kết quả theo khoá trong bảng `order-idempotency` 24 giờ; thêm vào đó, item đánh dấu `#KEY#…` được ghi **trong cùng giao dịch** với đơn, nên kể cả khi Lambda bị cắt ngay sau khi giao dịch thành công, lần gọi lại vẫn tìm ra đơn cũ thay vì tạo đơn mới.
 
@@ -200,7 +197,7 @@ Bạn vừa tạo đơn thật trong sandbox. Huỷ nó ở mục 5.4.9 hoặc t
 Gửi lại yêu cầu ở mục 5.4.5 với `expectedPrice` khác giá thật và một khoá mới:
 
 ```bash
-KEY=$(uuidgen 2>/dev/null || python -c "import uuid; print(uuid.uuid4())")
+KEY=$(command node -e "console.log(crypto.randomUUID())")
 BAD=$(echo "$BODY" | jq '.items[0].expectedPrice -= 1000')
 curl -s -X POST "$API/api/v1/orders" -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" -H "Idempotency-Key: $KEY" -d "$BAD" | jq
@@ -208,10 +205,8 @@ curl -s -X POST "$API/api/v1/orders" -H "Authorization: Bearer $TOKEN" \
 
 **Kết quả đúng:** `409`, `code` là `PRICE_CHANGED`, `changedItems` có `expectedPrice` (giá bạn gửi) và `currentPrice` (giá thật). Không có đơn mới, kho không đổi. Trên web, trang đặt hàng hiện giá mới để khách xem rồi bấm xác nhận lại.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 10. Phản hồi 409 `PRICE_CHANGED`.
-{{% /notice %}}
+![Phản hồi 409 PRICE_CHANGED](10-price-changed.png)
+*Ảnh 10. Phản hồi 409 `PRICE_CHANGED`.*
 
 Các mã lỗi nghiệp vụ khác của `POST /api/v1/orders` (cùng dạng `application/problem+json`):
 
@@ -227,20 +222,22 @@ Các mã lỗi nghiệp vụ khác của `POST /api/v1/orders` (cùng dạng `ap
 
 **Mục tiêu:** thấy SQS giữ đơn khi worker tạm ngừng, và worker xử lý tiếp khi bật lại.
 
-API chỉ ghi đơn `PENDING` rồi đẩy tin `{ orderId, userId, correlationId }` vào hàng đợi; khách nhận phản hồi ngay, không chờ email. Worker xử lý sau.
+API chỉ ghi đơn `PENDING` rồi đẩy tin `{ orderId, userId, type: "PLACED", correlationId }` vào hàng đợi (huỷ đơn thì `type` là `CANCELLED`); khách nhận phản hồi ngay, không chờ email. Worker xử lý sau.
 
 1. Console → **Lambda** → hàm `shop-sbx-<tên>-api-OrderProcessorFunction…` → **Configuration** → **Triggers** → chọn trigger SQS → **Edit** → bỏ chọn **Activate trigger** → **Save**.
 2. Đặt một đơn trên web. Trang chi tiết đơn giữ "Chờ xác nhận", tải lại vẫn vậy.
-3. Console → **SQS** → hàng đợi `…-OrdersQueue…` → **Send and receive messages** → **Poll for messages**. Thấy một tin, mở ra: chỉ có `orderId`, `userId`, `correlationId`, không có địa chỉ hay số điện thoại.
+3. Console → **SQS** → hàng đợi `…-OrdersQueue…` → **Send and receive messages** → **Poll for messages**. Thấy một tin, mở ra: thân tin chỉ có `orderId`, `userId`, `type` (`PLACED`), `correlationId`, không có địa chỉ hay số điện thoại; `correlationId` còn nằm ở tab **Attributes** (message attribute).
    Lưu ý: poll làm tin bị ẩn 60 giây (visibility timeout); **không bấm Delete**.
 4. Bật lại trigger (**Activate trigger** → **Save**). Trong vòng một phút, đơn sang "Đã xác nhận" và email xác nhận tới hộp thư.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 11. Trigger SQS ở trạng thái Disabled.
-- 12. Tin trong hàng đợi đơn khi worker đang tắt (làm mờ `userId`).
-- 13. Đơn chuyển "Đã xác nhận" sau khi bật lại trigger.
-{{% /notice %}}
+![Trigger SQS ở trạng thái Disabled](11-trigger-disabled.png)
+*Ảnh 11. Trigger SQS ở trạng thái Disabled.*
+
+![Tin trong hàng đợi đơn](12-tin-sqs.png)
+*Ảnh 12. Tin trong hàng đợi đơn khi worker đang tắt.*
+
+![Đơn đã xác nhận sau khi bật trigger](13-don-c-da-xac-nhan.png)
+*Ảnh 13. Đơn chuyển "Đã xác nhận" sau khi bật lại trigger.*
 
 **Kiểm tra log worker:** **CloudWatch** → **Logs Insights**, log group `…-OrderProcessorLogs…`:
 
@@ -252,10 +249,8 @@ fields @timestamp, level, message, orderId
 
 Log có `correlationId` đi xuyên từ API sang worker; không có email, số điện thoại, địa chỉ.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 14. Kết quả Logs Insights của worker.
-{{% /notice %}}
+![Logs Insights của worker](14-logs-insights.png)
+*Ảnh 14. Kết quả Logs Insights của worker.*
 
 Nếu một tin lỗi 3 lần liên tiếp (vd. quyền IAM sai, SNS lỗi), SQS chuyển nó sang `…-OrdersDeadLetterQueue…` và đơn vẫn ở `PENDING`, không mất. Cách xử lý từng bước ở `docs/runbooks/dlq-orders.md`. Ở prod có alarm `orders-dlq` báo khi DLQ có tin.
 
@@ -266,11 +261,11 @@ Nếu một tin lỗi 3 lần liên tiếp (vd. quyền IAM sai, SNS lỗi), SQS
 1. Mở hộp thư của địa chỉ đã xác minh: có email xác nhận với mã đơn, tên × số lượng, tổng tiền, thanh toán khi nhận hàng, miễn phí vận chuyển. Email cố ý không có họ tên, địa chỉ, số điện thoại, không có link.
 2. Bảng `...OrderIdempotencyTable...` → **Explore items**: có item mới với `id` bắt đầu bằng tên hàm worker (`…OrderProcessorFunction…`), `status` = `COMPLETED` và `expiration` (24 giờ sau). Khoá chống trùng của email là `userId` cùng `<orderId>#CONFIRMED`; Powertools lưu khoá dưới dạng chuỗi băm nên trong `id` không đọc ra mã đơn. SQS giao tin "ít nhất một lần", nên worker có thể nhận cùng một tin hai lần; lần sau thấy bản ghi `COMPLETED` này thì không gửi lại email.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 15. Email xác nhận đơn (làm mờ địa chỉ email).
-- 16. Item của worker trong bảng `order-idempotency` (`id` bắt đầu bằng `…OrderProcessorFunction…`, `status` = `COMPLETED`).
-{{% /notice %}}
+![Email xác nhận đơn](15-email-xac-nhan.png)
+*Ảnh 15. Email xác nhận đơn.*
+
+![Item của worker trong order-idempotency](16-idempotency-email.png)
+*Ảnh 16. Item của worker trong bảng `order-idempotency` (`id` bắt đầu bằng `…OrderProcessorFunction…`, `status` = `COMPLETED`).*
 
 Worker làm theo thứ tự (`docs/business/ordering.md`, luồng SQS):
 
@@ -295,12 +290,14 @@ SES từ chối (vd. địa chỉ nhận chưa xác minh trong sandbox) thì wor
 
    Trả `409` mã `CANNOT_CANCEL`; kho không được cộng thêm lần nữa (giao dịch huỷ có điều kiện trạng thái hiện tại).
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 17. Trang chi tiết đơn đã huỷ.
-- 18. Email báo huỷ đơn (làm mờ địa chỉ email).
-- 19. Phản hồi 409 `CANNOT_CANCEL` khi huỷ lần hai.
-{{% /notice %}}
+![Chi tiết đơn đã huỷ](17-don-da-huy.png)
+*Ảnh 17. Trang chi tiết đơn đã huỷ.*
+
+![Email báo huỷ đơn](18-email-huy.png)
+*Ảnh 18. Email báo huỷ đơn.*
+
+![Phản hồi 409 CANNOT_CANCEL](19-cannot-cancel.png)
+*Ảnh 19. Phản hồi 409 `CANNOT_CANCEL` khi huỷ lần hai.*
 
 ### 5.4.10. Admin chuyển trạng thái giao hàng
 
@@ -313,18 +310,22 @@ SES từ chối (vd. địa chỉ nhận chưa xác minh trong sandbox) thì wor
      --user-pool-id <UserPoolId> --username <email của bạn> --group-name admin
    ```
 
+   Nếu lệnh báo `UserNotFoundException`, dùng `userId` (`sub` của tài khoản) thay cho email ở `--username`.
+
 2. Đăng xuất rồi đăng nhập lại trên web để token mới có nhóm `admin`. Menu tài khoản hiện "Trang quản trị".
 3. Mở `/admin`. Tài khoản admin phải bật xác thực hai lớp: chưa bật thì web chuyển sang trang bật, làm theo hướng dẫn trên trang (quét mã QR bằng ứng dụng xác thực) rồi quay lại `/admin`.
 4. Đặt một đơn mới bằng tài khoản thường (hoặc chính tài khoản này), chờ "Đã xác nhận".
 5. Tab **Chờ giao** → **Chuyển sang Đang giao** → xác nhận. Đơn sang tab **Đang giao**; `openOrders` giảm 1 (hàng đã rời kho, khách đặt thêm được).
 6. Tab **Đang giao** → **Đã giao**. Khách mở đơn thấy "Đã giao".
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 20. Trang `/admin`, tab Chờ giao, có đơn vừa xác nhận.
-- 21. Hộp thoại xác nhận chuyển sang Đang giao.
-- 22. Trang chi tiết đơn phía khách ở trạng thái "Đã giao".
-{{% /notice %}}
+![Trang admin, tab Chờ giao](20-admin-cho-giao.png)
+*Ảnh 20. Trang `/admin`, tab Chờ giao, có đơn vừa xác nhận.*
+
+![Hộp thoại chuyển sang Đang giao](21-hop-thoai-dang-giao.png)
+*Ảnh 21. Hộp thoại xác nhận chuyển sang Đang giao.*
+
+![Chi tiết đơn đã giao](22-don-da-giao.png)
+*Ảnh 22. Trang chi tiết đơn phía khách ở trạng thái "Đã giao".*
 
 **Kiểm tra quyền:** gọi API admin bằng token của một tài khoản **không** thuộc nhóm `admin`:
 
@@ -336,20 +337,21 @@ Trả `403`. Không có token thì `401`. Quyền kiểm ở backend theo nhóm 
 
 ### 5.4.11. Chi phí phần này
 
-TODO (Hoàng): điền số từ Cost Explorer của tài khoản demo sau khi chạy lab (lọc theo dịch vụ như 5.2); chưa có số đo cho riêng phần bán hàng trong repo. Các dịch vụ phát sinh:
+Số đo trên tài khoản sandbox của người viết, chạy lab từ 22 đến 24/11/2026: Cost Explorer (đã bỏ Credit) ghi 0 USD cho mọi dịch vụ, nằm trong mức miễn phí. Lab chạy vài giờ rồi xoá thì gần như không tốn tiền; nếu để stack chạy lâu, xem lại Billing.
 
-| Dịch vụ | Dùng trong phần này | Ước tính mỗi tháng |
+| Dịch vụ | Dùng trong phần này | Số đo trong lab |
 |---|---|---|
-| Lambda `ordering`, `order-processor`, admin | Vài chục lần gọi trong lab | TODO |
-| DynamoDB `carts`, `orders`, `order-idempotency` | On-demand, vài trăm lần đọc ghi; `orders` bật point-in-time recovery | TODO |
-| SQS hàng đợi đơn và DLQ | Vài chục tin | TODO |
-| SES | Vài email (sandbox) | TODO |
-| SNS `order-confirmed` | Vài tin | TODO |
+| Lambda `ordering`, `order-processor`, admin | Vài chục lần gọi trong lab | $0 (trong mức miễn phí) |
+| DynamoDB `carts`, `orders`, `order-idempotency` | On-demand, vài trăm lần đọc ghi; `orders` bật point-in-time recovery | $0 (trong mức miễn phí) |
+| SQS hàng đợi đơn và DLQ | Vài chục tin | $0 (trong mức miễn phí) |
+| SES | Vài email (sandbox) | $0 (trong mức miễn phí) |
+| SNS `order-confirmed` | Vài tin | $0 (trong mức miễn phí) |
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- 23. Cost Explorer, **Group by: Service** như 5.2.
-{{% /notice %}}
+![Cost Explorer theo dịch vụ](23-cost-explorer.png)
+*Ảnh 23. Cost Explorer, **Group by: Service** như 5.2.*
+
+![Trang Free plan](23b-free-tier.png)
+*Ảnh 23b. Trang Free plan: tài khoản còn trong gói miễn phí.*
 
 ### 5.4.12. Clean up
 
