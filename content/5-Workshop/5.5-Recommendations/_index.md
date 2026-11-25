@@ -20,10 +20,7 @@ After this chapter you will:
 
 ### 5.5.1. Recommendation architecture
 
-{{% notice warning %}}
-**Screenshots to add:**
-- Recommendation diagram, drawn by hand in draw.io with AWS icons (no AI-drawn diagrams): Web → CloudFront (WAF in prod) → API Gateway → Lambda `events` → DynamoDB `events`; SNS `order-confirmed` → SQS → Lambda writes `PURCHASE`; EventBridge Scheduler 02:00 → Python pipeline Lambda → reads `products`, `events` → writes `recs`; Lambda `recommendation` reads `recs` for the web.
-{{% /notice %}}
+The recommendation part is shown on the shared architecture diagram in [5.1](../5.1-introduction/), steps 10–11 (nightly job) and 11 (recording events, reading recommendations).
 
 | Recommendation type | Method | Data used |
 |---|---|---|
@@ -46,10 +43,7 @@ uv sync
 uv run pytest        # environment check, everything must pass
 ```
 
-{{% notice warning %}}
-**Screenshots to add:**
-- Output of `uv run pytest`.
-{{% /notice %}}
+![`uv run pytest` output: 65 tests passed](5.5-01.png)
 
 ### 5.5.3. Generate data and evaluate models locally
 
@@ -61,10 +55,9 @@ The generator creates 600 users in 4 groups (gamers, office workers, programming
 uv run data --out generated --seed 42
 ```
 
-{{% notice warning %}}
-**Screenshots to add:**
-- The `generated/` folder with `users.csv`, `orders.csv`, `events.csv`.
-{{% /notice %}}
+![The `generated/` folder after generating data](5.5-02.png)
+
+The folder has 7 files: `users.csv`, `products.csv`, `orders.csv`, `order_items.csv`, `cart_items.csv`, `interactions_train.csv`, `interactions_test.csv`.
 
 #### Evaluate
 
@@ -75,17 +68,18 @@ uv run data-eval --data generated            # Frequently bought together vs bas
 uv run data-eval-for-you --data generated    # For you vs baseline
 ```
 
-{{% notice warning %}}
-**Screenshots to add:**
-- The two result tables.
-{{% /notice %}}
+![Frequently bought together evaluated against the baseline](5.5-03.png)
+
+![For you evaluated against the baseline](5.5-04.png)
 
 Results over 4 seeds (details in `docs/business/recommendation.md` section 4.1):
 
 | | Baseline precision@10 | Model precision@10 | Baseline coverage | Model coverage |
 |---|---|---|---|---|
-| Frequently bought together | 0.029–0.037 | 0.048–0.058 | 0.108 | 0.618–0.667 |
+| Frequently bought together (rules, baseline when no rule) | 0.029–0.037 | 0.048–0.058 | 0.108 | 0.618–0.667 |
 | For you | 0.029–0.044 | 0.047–0.054 | 0.137–0.177 | 0.833–0.873 |
+
+The screenshot below is seed 42: the "Luật mua kèm" row (0.0448) is the rules alone; the table above uses the "rules, baseline when no rule" row (0.0485) because that is how the pipeline really runs.
 
 **Reading the numbers:** the synthetic data has built-in buying patterns, so the results show that the pipeline and models learn those patterns correctly, not yet that the models do better with real customers.
 
@@ -98,10 +92,7 @@ The pipeline is deployed with the API stack (`infra/lib/recs-pipeline.ts`): a Py
 1. Console → **EventBridge** → **Schedules**, open the `...RecsPipelineNightly...` schedule of stack `shop-sbx-<name>-api`.
 2. Check the expression `cron(0 2 * * ? *)`, time zone `Asia/Ho_Chi_Minh`, target Lambda `...RecsPipeline...`, 2 retries.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- Schedule detail page.
-{{% /notice %}}
+![The schedule at 02:00 Vietnam time](5.5-05.png)
 
 #### Run it manually once
 
@@ -109,10 +100,7 @@ The pipeline is deployed with the API stack (`infra/lib/recs-pipeline.ts`): a Py
 2. **Test** tab → **Create new event**, name `manual`, content `{}` → **Test**.
 3. Expected result: green "succeeded" box, about 4 seconds, about 100 MB of memory used.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- Test result.
-{{% /notice %}}
+![The recs-pipeline Lambda test result](5.5-06.png)
 
 #### Read the log
 
@@ -129,10 +117,7 @@ fields @timestamp, products, realEvents, syntheticEvents, gates.ALSO_BOUGHT.mode
 
 Expected: `gates` only has `ALSO_BOUGHT` and `FOR_YOU`, each with a model score above the baseline. `BESTSELLER` is the baseline itself, so it has no gate and is always activated. `results` shows `activated: true` for `ALSO_BOUGHT` and `BESTSELLER`. `FOR_YOU` is only written for real users (with a `userIdHash` in the `events` table), so it may write 0 rows if you have not done the anonymization step below yet. Do that step, then run the job manually again to see rows for `FOR_YOU`.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- The JSON log line.
-{{% /notice %}}
+![The JSON log line of the recommendation job](5.5-07.png)
 
 #### Inspect the `recs` table and call the API
 
@@ -140,10 +125,11 @@ Expected: `gates` only has `ALSO_BOUGHT` and `FOR_YOU`, each with a model score 
 2. In a browser: `<WebUrl>/api/v1/recs/bestsellers?limit=3`. Expected: `"source":"BESTSELLER"` and 3 products.
 3. Open a laptop's detail page on your web app: the "Frequently bought together" block shows a laptop sleeve, a mouse and an HDMI cable.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- Pointers in the `recs` table; the API JSON; the "Frequently bought together" block on the web.
-{{% /notice %}}
+![The META pointers in the recs table](5.5-08.png)
+
+![The bestsellers API JSON](5.5-09.png)
+
+![The Frequently bought together block on the web](5.5-10.png)
 
 #### Alert when the job stops running (prod)
 
@@ -158,10 +144,7 @@ The `events` table is the model's input data. It **does not store real user IDs*
 3. Check the two new rows `VIEW` and `ADD_TO_CART`: `userIdHash` is a 64-character hex string, with no email or original `userId`; there is a `ttl` of 90 days.
 4. Try sending an event while signed out, or sending `PURCHASE` from the client: the API returns 401 and 400. `PURCHASE` is written only by the system once an order is confirmed (SNS `order-confirmed` → SQS → Lambda), exactly once per product in the order.
 
-{{% notice warning %}}
-**Screenshots to add:**
-- The two rows in the `events` table (partly hide the hash values if you like).
-{{% /notice %}}
+![Rows in the events table with userIdHash hidden](5.5-11.png)
 
 ### 5.5.6. Recommendation poisoning experiment
 
@@ -172,10 +155,7 @@ cd shop-ai/data
 uv run data-poison --seed 42
 ```
 
-{{% notice warning %}}
-**Screenshots to add:**
-- Result table.
-{{% /notice %}}
+![The recommendation poisoning experiment results](5.5-12.png)
 
 | How events of one user–product pair are combined | 50 accounts × 50 repeats: % of real users who see the target product |
 |---|---|
@@ -204,10 +184,7 @@ Estimate for one environment, prices for ap-southeast-1 and us-east-1 (WAF), Nov
 
 Comparison: Amazon Personalize charges per training hour and per recommendation request, which can cause bill shock during demos; this is why the mentor suggested building our own (ADR-0016).
 
-{{% notice warning %}}
-**Screenshots to add:**
-- Cost Explorer, **Group by: Service** as in 5.2 (filtering by the `project` tag only works after the tag is activated for cost allocation in Billing).
-{{% /notice %}}
+![Cost Explorer grouped by service](5.5-13.png)
 
 ### 5.5.8. Clean up
 

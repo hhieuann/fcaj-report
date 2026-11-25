@@ -20,10 +20,7 @@ Sau chương này bạn sẽ:
 
 ### 5.5.1. Kiến trúc phần gợi ý
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Sơ đồ phần gợi ý, tự vẽ bằng draw.io với icon AWS (không dùng sơ đồ do AI vẽ): Web → CloudFront (WAF ở prod) → API Gateway → Lambda `events` → DynamoDB `events`; SNS `order-confirmed` → SQS → Lambda ghi `PURCHASE`; EventBridge Scheduler 02:00 → Lambda Python pipeline → đọc `products`, `events` → ghi `recs`; Lambda `recommendation` đọc `recs` cho web.
-{{% /notice %}}
+Sơ đồ phần gợi ý nằm trong sơ đồ kiến trúc chung ở [5.1](../5.1-introduction/), các bước 10–11 (job mỗi đêm) và 11 (ghi sự kiện, đọc gợi ý).
 
 | Loại gợi ý | Cách tính | Dữ liệu dùng |
 |---|---|---|
@@ -46,10 +43,7 @@ uv sync
 uv run pytest        # kiểm tra môi trường, phải xanh hết
 ```
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Kết quả `uv run pytest`.
-{{% /notice %}}
+![Kết quả `uv run pytest`: 65 test đạt](5.5-01.png)
 
 ### 5.5.3. Sinh dữ liệu và đánh giá mô hình trên máy
 
@@ -61,10 +55,9 @@ Generator tạo 600 người dùng thuộc 4 nhóm (game thủ, văn phòng, sin
 uv run data --out generated --seed 42
 ```
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Thư mục `generated/` có `users.csv`, `orders.csv`, `events.csv`.
-{{% /notice %}}
+![Thư mục `generated/` sau khi sinh dữ liệu](5.5-02.png)
+
+Thư mục có 7 file: `users.csv`, `products.csv`, `orders.csv`, `order_items.csv`, `cart_items.csv`, `interactions_train.csv`, `interactions_test.csv`.
 
 #### Đánh giá
 
@@ -75,17 +68,18 @@ uv run data-eval --data generated            # Thường mua kèm so với basel
 uv run data-eval-for-you --data generated    # Dành cho bạn so với baseline
 ```
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Hai bảng kết quả.
-{{% /notice %}}
+![Đánh giá Thường mua kèm so với baseline](5.5-03.png)
+
+![Đánh giá Dành cho bạn so với baseline](5.5-04.png)
 
 Kết quả 4 seed (chi tiết ở `docs/business/recommendation.md` mục 4.1):
 
 | | Baseline precision@10 | Mô hình precision@10 | Baseline coverage | Mô hình coverage |
 |---|---|---|---|---|
-| Thường mua kèm | 0.029–0.037 | 0.048–0.058 | 0.108 | 0.618–0.667 |
+| Thường mua kèm (luật mua kèm, thiếu luật thì dùng baseline) | 0.029–0.037 | 0.048–0.058 | 0.108 | 0.618–0.667 |
 | Dành cho bạn | 0.029–0.044 | 0.047–0.054 | 0.137–0.177 | 0.833–0.873 |
+
+Ảnh dưới là seed 42: dòng "Luật mua kèm" (0.0448) là luật thuần; bảng trên dùng dòng "Luật mua kèm, thiếu luật thì dùng baseline" (0.0485) vì đó là cách pipeline chạy thật.
 
 **Lưu ý khi đọc số:** dữ liệu giả lập có cài sẵn quy luật mua kèm, nên kết quả chứng minh pipeline và mô hình học đúng quy luật đó, chưa chứng minh mô hình tốt hơn với khách thật.
 
@@ -98,10 +92,7 @@ Pipeline được deploy cùng stack API (`infra/lib/recs-pipeline.ts`): một L
 1. Console → **EventBridge** → **Schedules**, mở lịch `...RecsPipelineNightly...` của stack `shop-sbx-<tên>-api`.
 2. Kiểm tra biểu thức `cron(0 2 * * ? *)`, múi giờ `Asia/Ho_Chi_Minh`, đích là Lambda `...RecsPipeline...`, retry 2 lần.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Trang chi tiết lịch.
-{{% /notice %}}
+![Lịch chạy 02:00 giờ Việt Nam](5.5-05.png)
 
 #### Chạy tay một lần
 
@@ -109,10 +100,7 @@ Pipeline được deploy cùng stack API (`infra/lib/recs-pipeline.ts`): một L
 2. Tab **Test** → **Create new event**, tên `manual`, nội dung `{}` → **Test**.
 3. Kết quả đúng: khung xanh "succeeded", mất khoảng 4 giây, dùng khoảng 100 MB bộ nhớ.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Kết quả Test.
-{{% /notice %}}
+![Kết quả Test Lambda recs-pipeline](5.5-06.png)
 
 #### Đọc log
 
@@ -127,10 +115,7 @@ fields @timestamp, products, realEvents, syntheticEvents, gates.ALSO_BOUGHT.mode
 
 Cần thấy: `gates` chỉ có `ALSO_BOUGHT` và `FOR_YOU`, mỗi loại có điểm mô hình cao hơn baseline. `BESTSELLER` chính là baseline nên không có gate và luôn bật. `results` ghi `activated: true` cho `ALSO_BOUGHT` và `BESTSELLER`. `FOR_YOU` chỉ ghi cho người dùng thật (có `userIdHash` trong bảng `events`), nên nếu chưa làm bước ẩn danh ở dưới thì có thể ghi 0 dòng. Làm bước đó rồi chạy tay job lần nữa để thấy `FOR_YOU` có dòng.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Dòng log JSON.
-{{% /notice %}}
+![Dòng log JSON của job gợi ý](5.5-07.png)
 
 #### Xem bảng `recs` và gọi API
 
@@ -138,10 +123,11 @@ Cần thấy: `gates` chỉ có `ALSO_BOUGHT` và `FOR_YOU`, mỗi loại có đ
 2. Mở trình duyệt: `<WebUrl>/api/v1/recs/bestsellers?limit=3`. Cần thấy `"source":"BESTSELLER"` và 3 sản phẩm.
 3. Mở trang chi tiết một laptop trên web của bạn: khối "Thường mua kèm" có túi chống sốc, chuột, cáp HDMI.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Con trỏ trong bảng `recs`; JSON của API; khối "Thường mua kèm" trên web.
-{{% /notice %}}
+![Con trỏ META trong bảng recs](5.5-08.png)
+
+![JSON của API bestsellers](5.5-09.png)
+
+![Khối Thường mua kèm trên web](5.5-10.png)
 
 #### Cảnh báo khi job ngừng chạy (prod)
 
@@ -156,10 +142,7 @@ Bảng `events` là dữ liệu đầu vào cho mô hình. Nó **không lưu mã
 3. Kiểm tra hai dòng `VIEW` và `ADD_TO_CART` vừa tạo: `userIdHash` là chuỗi 64 ký tự hex, không có email hay `userId` gốc; có `ttl` 90 ngày.
 4. Thử gửi sự kiện khi chưa đăng nhập, hoặc gửi `PURCHASE` từ client: API trả 401 và 400. `PURCHASE` chỉ do hệ thống ghi khi đơn đã xác nhận (SNS `order-confirmed` → SQS → Lambda), mỗi sản phẩm của đơn đúng một lần.
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Hai dòng trong bảng `events` (che bớt giá trị hash nếu muốn).
-{{% /notice %}}
+![Các dòng trong bảng events, userIdHash đã che](5.5-11.png)
 
 ### 5.5.6. Thí nghiệm đầu độc gợi ý
 
@@ -170,10 +153,7 @@ cd shop-ai/data
 uv run data-poison --seed 42
 ```
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Bảng kết quả.
-{{% /notice %}}
+![Bảng kết quả thí nghiệm đầu độc gợi ý](5.5-12.png)
 
 | Cách gộp sự kiện của một cặp người dùng–sản phẩm | 50 tài khoản × 50 lần lặp: % người dùng thật thấy sản phẩm mục tiêu |
 |---|---|
@@ -202,10 +182,7 @@ Giới hạn đã biết: gọi thẳng URL API Gateway (bỏ qua CloudFront) th
 
 So sánh: Amazon Personalize tính tiền theo giờ huấn luyện và theo số request gợi ý, dễ gây sốc hoá đơn khi demo; đây là lý do mentor góp ý tự xây (ADR-0016).
 
-{{% notice warning %}}
-**Ảnh cần bổ sung:**
-- Cost Explorer, **Group by: Service** như 5.2 (lọc theo tag `project` chỉ dùng được khi tag đã bật cost allocation trong Billing).
-{{% /notice %}}
+![Cost Explorer theo dịch vụ](5.5-13.png)
 
 ### 5.5.8. Clean up
 
