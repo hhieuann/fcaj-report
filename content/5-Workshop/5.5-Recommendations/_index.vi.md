@@ -20,7 +20,9 @@ Sau chương này bạn sẽ:
 
 ### 5.5.1. Kiến trúc phần gợi ý
 
-Sơ đồ phần gợi ý nằm trong sơ đồ kiến trúc chung ở [5.1](../5.1-introduction/), các bước 10–11 (job mỗi đêm) và 11 (ghi sự kiện, đọc gợi ý).
+![Sơ đồ phần gợi ý sản phẩm](00-so-do-goi-y.png)
+*Ảnh 00. Sơ đồ phần gợi ý, các luồng đánh số 1–6: (1) web gọi API qua CloudFront; (2) ghi sự kiện `VIEW`, `ADD_TO_CART`, mã người dùng băm HMAC bằng khoá trong SSM; (3) sự kiện `PURCHASE` từ SNS `order-confirmed` (chương 5.4) qua SQS; (4) 02:00 mỗi đêm EventBridge Scheduler chạy `recs-pipeline` đọc `events`, `products`, ghi phiên bản mới vào `recs` và chỉ bật khi hơn baseline; (5) Lambda `recs` trả gợi ý của phiên bản `ACTIVE`; (6) CloudWatch báo động khi job không chạy thành công (prod).*
+[Mở sơ đồ tương tác](/fcaj-report/diagrams/shop-ai-recommendations.html), vẽ bằng skill [AWSketch](https://github.com/the-khiem7/AWSketch) từ [tệp mô tả JSON](/fcaj-report/diagrams/shop-ai-recommendations.json). Phần này cũng là các bước 10–11 trong sơ đồ kiến trúc chung ở [5.1](../5.1-introduction/).
 
 | Loại gợi ý | Cách tính | Dữ liệu dùng |
 |---|---|---|

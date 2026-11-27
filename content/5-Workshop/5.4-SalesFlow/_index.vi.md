@@ -21,8 +21,8 @@ Sau chương này bạn sẽ:
 ### 5.4.1. Kiến trúc phần bán hàng
 
 ![Sơ đồ luồng bán hàng](01-so-do.png)
-*Ảnh 01. Sơ đồ luồng bán hàng: Web (CloudFront) → API Gateway (JWT Cognito) → Lambda `ordering` → DynamoDB `products`, `carts`, `orders`, `order-idempotency` (một giao dịch) → SQS hàng đợi đơn (DLQ sau 3 lần lỗi) → Lambda `order-processor` → SES (email cho khách) và SNS `order-confirmed` → SQS của module `events`; Lambda admin đọc index `byStatus` của `orders`.*
-[Nguồn draw.io](01-so-do.drawio)
+*Ảnh 01. Sơ đồ luồng bán hàng, các luồng đánh số 1–7: (1) đăng nhập Cognito; (2) gọi API qua CloudFront; (3) giỏ hàng; (4) đặt hàng; (5) xử lý đơn; (6) lỗi 3 lần sang DLQ; (7) admin. Đường đi: Web (CloudFront) → API Gateway (JWT Cognito) → Lambda `ordering` → DynamoDB `products`, `carts`, `orders`, `order-idempotency` (một giao dịch) → SQS hàng đợi đơn (DLQ sau 3 lần lỗi) → Lambda `order-processor` → SES (email cho khách) và SNS `order-confirmed` → SQS của module `events`; Lambda admin đọc index `byStatus` của `orders`.*
+[Mở sơ đồ tương tác](/fcaj-report/diagrams/shop-ai-sales-flow.html): bấm từng luồng để xem mũi tên theo thứ tự, bấm vào một thành phần để đọc vai trò của nó. Sơ đồ vẽ bằng skill [AWSketch](https://github.com/the-khiem7/AWSketch) từ [tệp mô tả JSON](/fcaj-report/diagrams/shop-ai-sales-flow.json).
 
 | Thành phần | Dùng làm gì | Cấu hình đáng chú ý (`infra/lib/api-stack.ts`) |
 |---|---|---|

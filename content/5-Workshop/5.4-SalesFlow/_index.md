@@ -21,8 +21,8 @@ After this chapter you will:
 ### 5.4.1. Sales flow architecture
 
 ![Sales flow diagram](01-so-do.png)
-*Figure 01. Sales flow diagram: Web (CloudFront) → API Gateway (Cognito JWT) → `ordering` Lambda → DynamoDB `products`, `carts`, `orders`, `order-idempotency` (one transaction) → SQS orders queue (DLQ after 3 failures) → `order-processor` Lambda → SES (customer email) and SNS `order-confirmed` → the `events` module's SQS queue; the admin Lambda reads the `byStatus` index of `orders`.*
-[draw.io source](01-so-do.drawio)
+*Figure 01. Sales flow diagram with numbered flows 1–7: (1) Cognito sign-in; (2) API call through CloudFront; (3) cart; (4) place order; (5) process order; (6) 3 failures to the DLQ; (7) admin. Path: Web (CloudFront) → API Gateway (Cognito JWT) → `ordering` Lambda → DynamoDB `products`, `carts`, `orders`, `order-idempotency` (one transaction) → SQS orders queue (DLQ after 3 failures) → `order-processor` Lambda → SES (customer email) and SNS `order-confirmed` → the `events` module's SQS queue; the admin Lambda reads the `byStatus` index of `orders`.*
+[Open the interactive diagram](/fcaj-report/diagrams/shop-ai-sales-flow.html): press a flow to walk its arrows in order, click a component to read its role. Drawn with the [AWSketch](https://github.com/the-khiem7/AWSketch) skill from a [JSON spec](/fcaj-report/diagrams/shop-ai-sales-flow.json).
 
 | Component | Purpose | Notable settings (`infra/lib/api-stack.ts`) |
 |---|---|---|

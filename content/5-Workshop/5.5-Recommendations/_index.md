@@ -20,7 +20,9 @@ After this chapter you will:
 
 ### 5.5.1. Recommendation architecture
 
-The recommendation part is shown on the shared architecture diagram in [5.1](../5.1-introduction/), steps 10–11 (nightly job) and 11 (recording events, reading recommendations).
+![Product recommendation diagram](00-so-do-goi-y.png)
+*Figure 00. Recommendation diagram with numbered flows 1–6: (1) the web calls the API through CloudFront; (2) `VIEW`, `ADD_TO_CART` events are stored with the user id hashed by the HMAC key from SSM; (3) `PURCHASE` events come from SNS `order-confirmed` (chapter 5.4) through SQS; (4) at 02:00 every night EventBridge Scheduler runs `recs-pipeline`, which reads `events` and `products`, writes a new version to `recs` and activates it only when it beats the baseline; (5) the `recs` Lambda serves the `ACTIVE` version; (6) CloudWatch alarms when the job has not succeeded (prod).*
+[Open the interactive diagram](/fcaj-report/diagrams/shop-ai-recommendations.html), drawn with the [AWSketch](https://github.com/the-khiem7/AWSketch) skill from a [JSON spec](/fcaj-report/diagrams/shop-ai-recommendations.json). This part is also steps 10–11 of the shared architecture diagram in [5.1](../5.1-introduction/).
 
 | Recommendation type | Method | Data used |
 |---|---|---|
