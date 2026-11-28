@@ -1,0 +1,710 @@
+{
+ "title": "shop-ai - Sales flow (Workshop 5.4)",
+ "intro": "Cart, order placement, asynchronous order processing and admin order management. Press a numbered flow to walk its arrows; click a component for its role.",
+ "canvas": {
+  "w": 1480,
+  "h": 712
+ },
+ "flows": [
+  {
+   "id": "signin",
+   "label": "Sign in",
+   "color": "#2563EB"
+  },
+  {
+   "id": "request",
+   "label": "API request",
+   "color": "#64748B"
+  },
+  {
+   "id": "cart",
+   "label": "Cart",
+   "color": "#E07A00"
+  },
+  {
+   "id": "order",
+   "label": "Place order",
+   "color": "#7C3AED"
+  },
+  {
+   "id": "process",
+   "label": "Process order",
+   "color": "#0E8F7E"
+  },
+  {
+   "id": "failure",
+   "label": "Failures to DLQ",
+   "color": "#BE123C"
+  },
+  {
+   "id": "admin",
+   "label": "Admin",
+   "color": "#DB2777"
+  }
+ ],
+ "groups": [
+  {
+   "type": "aws-cloud",
+   "x": 184,
+   "y": 16,
+   "w": 1280,
+   "h": 682,
+   "label": "AWS Cloud"
+  },
+  {
+   "type": "region",
+   "x": 356,
+   "y": 48,
+   "w": 1094,
+   "h": 636,
+   "label": "Region ap-southeast-1",
+   "sub": "Singapore"
+  },
+  {
+   "type": "highlight",
+   "x": 806,
+   "y": 90,
+   "w": 198,
+   "h": 434
+  }
+ ],
+ "nodes": [
+  {
+   "id": "users",
+   "icon": "res-users",
+   "x": 16,
+   "y": 260,
+   "w": 130,
+   "label": "Customer / Admin",
+   "sub": [
+    "Web browser"
+   ],
+   "detail": [
+    "Customer / Admin",
+    "Web browser",
+    "Customers shop and place orders; admins in the Cognito admin group manage order status."
+   ]
+  },
+  {
+   "id": "cloudfront",
+   "icon": "amazon-cloudfront",
+   "x": 200,
+   "y": 260,
+   "w": 140,
+   "label": "Amazon CloudFront",
+   "sub": [
+    "Web + /api/*"
+   ],
+   "detail": [
+    "Web delivery",
+    "Amazon CloudFront",
+    "Serves the React web from S3 and forwards /api/* to API Gateway over HTTPS."
+   ]
+  },
+  {
+   "id": "cognito",
+   "icon": "amazon-cognito",
+   "x": 386,
+   "y": 100,
+   "w": 150,
+   "label": "Amazon Cognito",
+   "sub": [
+    "User pool, JWT"
+   ],
+   "detail": [
+    "User identity",
+    "Amazon Cognito",
+    "Signs users in with SRP and optional TOTP MFA and issues the JWT that the API checks."
+   ]
+  },
+  {
+   "id": "apigw",
+   "icon": "amazon-api-gateway",
+   "x": 386,
+   "y": 260,
+   "w": 150,
+   "label": "Amazon API Gateway",
+   "sub": [
+    "HTTP API, JWT check"
+   ],
+   "detail": [
+    "HTTP API",
+    "Amazon API Gateway",
+    "Checks the Cognito JWT on every write route and routes each path to its module Lambda."
+   ]
+  },
+  {
+   "id": "cart",
+   "icon": "aws-lambda",
+   "x": 590,
+   "y": 100,
+   "w": 170,
+   "label": "Lambda cart",
+   "sub": [
+    "/api/v1/cart"
+   ],
+   "detail": [
+    "Cart handler",
+    "AWS Lambda",
+    "Reads and writes the customer cart with a version check so two tabs do not overwrite each other."
+   ]
+  },
+  {
+   "id": "ordering",
+   "icon": "aws-lambda",
+   "x": 590,
+   "y": 260,
+   "w": 170,
+   "label": "Lambda ordering",
+   "sub": [
+    "/api/v1/orders"
+   ],
+   "detail": [
+    "Order handler",
+    "AWS Lambda",
+    "Places an order in one DynamoDB transaction with an Idempotency-Key, then queues it for the worker."
+   ]
+  },
+  {
+   "id": "admin",
+   "icon": "aws-lambda",
+   "x": 590,
+   "y": 580,
+   "w": 170,
+   "label": "Lambda ordering-admin",
+   "sub": [
+    "/api/v1/admin/orders"
+   ],
+   "detail": [
+    "Admin order handler",
+    "AWS Lambda",
+    "Lists orders by status and moves them to SHIPPED, DELIVERED or CANCELLED; admin group only."
+   ]
+  },
+  {
+   "id": "carts",
+   "icon": "res-amazon-dynamodb-table",
+   "x": 820,
+   "y": 100,
+   "w": 170,
+   "label": "DynamoDB carts",
+   "sub": [
+    "one cart per user"
+   ],
+   "detail": [
+    "carts table",
+    "Amazon DynamoDB",
+    "One item per customer holding the cart lines; the order transaction clears the bought lines."
+   ]
+  },
+  {
+   "id": "products",
+   "icon": "res-amazon-dynamodb-table",
+   "x": 820,
+   "y": 210,
+   "w": 170,
+   "label": "DynamoDB products",
+   "sub": [
+    "stock >= quantity"
+   ],
+   "detail": [
+    "products table",
+    "Amazon DynamoDB",
+    "Stock is decremented in the order transaction only when stock >= quantity, and added back on cancel."
+   ]
+  },
+  {
+   "id": "orders",
+   "icon": "res-amazon-dynamodb-table",
+   "x": 820,
+   "y": 320,
+   "w": 170,
+   "label": "DynamoDB orders",
+   "sub": [
+    "GSI byStatus, PITR"
+   ],
+   "detail": [
+    "orders table",
+    "Amazon DynamoDB",
+    "Orders keyed by userId and ULID orderId, with an open-order counter and point-in-time recovery."
+   ]
+  },
+  {
+   "id": "idem",
+   "icon": "res-amazon-dynamodb-table",
+   "x": 820,
+   "y": 430,
+   "w": 170,
+   "label": "order-idempotency",
+   "sub": [
+    "TTL 24 hours"
+   ],
+   "detail": [
+    "Idempotency table",
+    "Amazon DynamoDB",
+    "Powertools Idempotency records so a repeated request or message is processed only once."
+   ]
+  },
+  {
+   "id": "dlq",
+   "icon": "res-amazon-simple-queue-service-queue",
+   "x": 1050,
+   "y": 100,
+   "w": 160,
+   "label": "Orders DLQ",
+   "sub": [
+    "kept 14 days"
+   ],
+   "detail": [
+    "Dead-letter queue",
+    "Amazon SQS",
+    "Holds an order message after 3 failed receives so it is not lost; alarmed in prod."
+   ]
+  },
+  {
+   "id": "sqs",
+   "icon": "res-amazon-simple-queue-service-queue",
+   "x": 1050,
+   "y": 260,
+   "w": 160,
+   "label": "SQS orders",
+   "sub": [
+    "encrypted, TLS only"
+   ],
+   "detail": [
+    "Order queue",
+    "Amazon SQS",
+    "New and cancelled orders wait here, so an order survives while the worker is down."
+   ]
+  },
+  {
+   "id": "sns",
+   "icon": "amazon-simple-notification-service",
+   "x": 1260,
+   "y": 100,
+   "w": 170,
+   "label": "Amazon SNS",
+   "sub": [
+    "order-confirmed"
+   ],
+   "detail": [
+    "Order events",
+    "Amazon SNS",
+    "Publishes order-confirmed; the events module subscribes to record PURCHASE events (chapter 5.5)."
+   ]
+  },
+  {
+   "id": "processor",
+   "icon": "aws-lambda",
+   "x": 1260,
+   "y": 260,
+   "w": 170,
+   "label": "Lambda order-processor",
+   "sub": [
+    "worker, batch 5"
+   ],
+   "detail": [
+    "Order worker",
+    "AWS Lambda",
+    "Confirms the order, sends the email and publishes order-confirmed; reports failures per message."
+   ]
+  },
+  {
+   "id": "ses",
+   "icon": "amazon-simple-email-service",
+   "x": 1260,
+   "y": 420,
+   "w": 170,
+   "label": "Amazon SES",
+   "sub": [
+    "confirm / cancel email"
+   ],
+   "detail": [
+    "Email",
+    "Amazon SES",
+    "Sends order confirmation and cancellation emails; in the sandbox only to verified addresses."
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "flow": "signin",
+   "points": [
+    [
+     81,
+     260
+    ],
+    [
+     81,
+     126
+    ],
+    [
+     439,
+     126
+    ]
+   ]
+  },
+  {
+   "flow": "request",
+   "points": [
+    [
+     103,
+     286
+    ],
+    [
+     248,
+     286
+    ]
+   ]
+  },
+  {
+   "flow": "request",
+   "points": [
+    [
+     292,
+     286
+    ],
+    [
+     439,
+     286
+    ]
+   ]
+  },
+  {
+   "flow": "cart",
+   "points": [
+    [
+     483,
+     286
+    ],
+    [
+     560,
+     286
+    ],
+    [
+     560,
+     126
+    ],
+    [
+     653,
+     126
+    ]
+   ]
+  },
+  {
+   "flow": "cart",
+   "points": [
+    [
+     697,
+     126
+    ],
+    [
+     883,
+     126
+    ]
+   ]
+  },
+  {
+   "flow": "order",
+   "points": [
+    [
+     483,
+     286
+    ],
+    [
+     653,
+     286
+    ]
+   ]
+  },
+  {
+   "flow": "order",
+   "points": [
+    [
+     697,
+     286
+    ],
+    [
+     800,
+     286
+    ]
+   ],
+   "from": "ordering"
+  },
+  {
+   "flow": "order",
+   "points": [
+    [
+     675,
+     344
+    ],
+    [
+     675,
+     540
+    ],
+    [
+     1130,
+     540
+    ],
+    [
+     1130,
+     344
+    ]
+   ]
+  },
+  {
+   "flow": "process",
+   "points": [
+    [
+     1152,
+     286
+    ],
+    [
+     1323,
+     286
+    ]
+   ]
+  },
+  {
+   "flow": "process",
+   "points": [
+    [
+     1345,
+     260
+    ],
+    [
+     1345,
+     200
+    ],
+    [
+     1030,
+     200
+    ],
+    [
+     1030,
+     346
+    ],
+    [
+     927,
+     346
+    ]
+   ]
+  },
+  {
+   "flow": "process",
+   "points": [
+    [
+     1345,
+     344
+    ],
+    [
+     1345,
+     420
+    ]
+   ]
+  },
+  {
+   "flow": "process",
+   "points": [
+    [
+     1345,
+     260
+    ],
+    [
+     1345,
+     184
+    ]
+   ]
+  },
+  {
+   "flow": "failure",
+   "dashed": true,
+   "points": [
+    [
+     1130,
+     260
+    ],
+    [
+     1130,
+     184
+    ]
+   ]
+  },
+  {
+   "flow": "admin",
+   "points": [
+    [
+     483,
+     286
+    ],
+    [
+     560,
+     286
+    ],
+    [
+     560,
+     606
+    ],
+    [
+     653,
+     606
+    ]
+   ]
+  },
+  {
+   "flow": "admin",
+   "points": [
+    [
+     697,
+     606
+    ],
+    [
+     785,
+     606
+    ],
+    [
+     785,
+     346
+    ],
+    [
+     883,
+     346
+    ]
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "points": [
+    [
+     461,
+     184
+    ],
+    [
+     461,
+     260
+    ]
+   ]
+  }
+ ],
+ "badges": [
+  {
+   "flow": "signin",
+   "x": 81,
+   "y": 200
+  },
+  {
+   "flow": "request",
+   "x": 173,
+   "y": 286
+  },
+  {
+   "flow": "cart",
+   "x": 560,
+   "y": 200
+  },
+  {
+   "flow": "order",
+   "x": 900,
+   "y": 540
+  },
+  {
+   "flow": "process",
+   "x": 1240,
+   "y": 286
+  },
+  {
+   "flow": "failure",
+   "x": 1130,
+   "y": 232
+  },
+  {
+   "flow": "admin",
+   "x": 560,
+   "y": 520
+  }
+ ],
+ "labels": [
+  {
+   "flow": "signin",
+   "x": 270,
+   "y": 120,
+   "text": "SRP, optional TOTP",
+   "anchor": "middle"
+  },
+  {
+   "flow": "order",
+   "x": 752,
+   "y": 280,
+   "text": "1 transaction",
+   "anchor": "middle"
+  },
+  {
+   "flow": "order",
+   "x": 1062,
+   "y": 534,
+   "text": "SendMessage",
+   "anchor": "middle"
+  },
+  {
+   "flow": "process",
+   "x": 1240,
+   "y": 216,
+   "text": "CONFIRMED",
+   "anchor": "middle"
+  },
+  {
+   "flow": "admin",
+   "x": 791,
+   "y": 572,
+   "text": "byStatus"
+  }
+ ],
+ "texts": [
+  {
+   "x": 905,
+   "y": 82,
+   "text": "TransactWriteItems: stock, order, cart",
+   "anchor": "middle",
+   "class": "ns"
+  }
+ ],
+ "hint": "Email is sent only when the stack is deployed with senderEmail; the DLQ alarm exists in prod only.",
+ "sections": [
+  {
+   "title": "Flow steps",
+   "open": true,
+   "ordered": true,
+   "items": [
+    {
+     "lead": "Sign in.",
+     "text": "The browser signs in to the Cognito user pool with SRP (TOTP MFA when enabled) and receives a JWT."
+    },
+    {
+     "lead": "API request.",
+     "text": "Calls go over HTTPS to CloudFront, which forwards /api/* to the HTTP API; API Gateway checks the JWT."
+    },
+    {
+     "lead": "Cart.",
+     "text": "Lambda cart reads and writes the carts table with a version check."
+    },
+    {
+     "lead": "Place order.",
+     "text": "Lambda ordering writes stock, order and cart in one TransactWriteItems, keyed by Idempotency-Key, then sends the order to SQS."
+    },
+    {
+     "lead": "Process order.",
+     "text": "Lambda order-processor marks the order CONFIRMED, emails the customer through SES and publishes order-confirmed to SNS."
+    },
+    {
+     "lead": "Failures to DLQ.",
+     "text": "A message that fails 3 times moves to the dead-letter queue instead of being lost."
+    },
+    {
+     "lead": "Admin.",
+     "text": "Lambda ordering-admin reads the byStatus index and moves orders through SHIPPED and DELIVERED, or cancels them."
+    }
+   ]
+  }
+ ]
+}

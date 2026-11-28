@@ -1,0 +1,670 @@
+{
+ "title": "shop-ai - Product recommendations (Workshop 5.5)",
+ "intro": "How shop-ai collects shopping events, builds three kinds of recommendations every night and serves them to the web. Press a numbered flow to walk its arrows; click a component for its role.",
+ "canvas": {
+  "w": 1480,
+  "h": 712
+ },
+ "flows": [
+  {
+   "id": "request",
+   "label": "Web request",
+   "color": "#64748B"
+  },
+  {
+   "id": "track",
+   "label": "Track events",
+   "color": "#2563EB"
+  },
+  {
+   "id": "purchase",
+   "label": "Purchase events",
+   "color": "#E07A00"
+  },
+  {
+   "id": "pipeline",
+   "label": "Nightly pipeline",
+   "color": "#7C3AED"
+  },
+  {
+   "id": "serve",
+   "label": "Serve recommendations",
+   "color": "#0E8F7E"
+  },
+  {
+   "id": "watch",
+   "label": "Watchdog",
+   "color": "#BE123C"
+  }
+ ],
+ "groups": [
+  {
+   "type": "aws-cloud",
+   "x": 184,
+   "y": 16,
+   "w": 1280,
+   "h": 682,
+   "label": "AWS Cloud"
+  },
+  {
+   "type": "region",
+   "x": 356,
+   "y": 48,
+   "w": 1094,
+   "h": 636,
+   "label": "Region ap-southeast-1",
+   "sub": "Singapore"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "users",
+   "icon": "res-users",
+   "x": 16,
+   "y": 260,
+   "w": 130,
+   "label": "Customer",
+   "sub": [
+    "Web browser"
+   ],
+   "detail": [
+    "Customer",
+    "Web browser",
+    "Views products and adds them to the cart; the web sends these events and shows the recommendation blocks."
+   ]
+  },
+  {
+   "id": "cloudfront",
+   "icon": "amazon-cloudfront",
+   "x": 200,
+   "y": 260,
+   "w": 140,
+   "label": "Amazon CloudFront",
+   "sub": [
+    "Web + /api/*"
+   ],
+   "detail": [
+    "Web delivery",
+    "Amazon CloudFront",
+    "Serves the web and forwards /api/* calls to API Gateway over HTTPS."
+   ]
+  },
+  {
+   "id": "apigw",
+   "icon": "amazon-api-gateway",
+   "x": 386,
+   "y": 260,
+   "w": 150,
+   "label": "Amazon API Gateway",
+   "sub": [
+    "HTTP API"
+   ],
+   "detail": [
+    "HTTP API",
+    "Amazon API Gateway",
+    "Routes /api/v1/events and /api/v1/recs/*; for-you needs the Cognito JWT, the other recs routes are public."
+   ]
+  },
+  {
+   "id": "sns",
+   "icon": "amazon-simple-notification-service",
+   "x": 386,
+   "y": 420,
+   "w": 150,
+   "label": "Amazon SNS",
+   "sub": [
+    "order-confirmed (5.4)"
+   ],
+   "detail": [
+    "Order events",
+    "Amazon SNS",
+    "The order worker of chapter 5.4 publishes order-confirmed here once an order is confirmed."
+   ]
+  },
+  {
+   "id": "sqs",
+   "icon": "res-amazon-simple-queue-service-queue",
+   "x": 386,
+   "y": 580,
+   "w": 150,
+   "label": "SQS events-purchase",
+   "sub": [
+    "with DLQ"
+   ],
+   "detail": [
+    "Purchase queue",
+    "Amazon SQS",
+    "Buffers order-confirmed messages for the events module, so a purchase event is not lost."
+   ]
+  },
+  {
+   "id": "events",
+   "icon": "aws-lambda",
+   "x": 590,
+   "y": 100,
+   "w": 170,
+   "label": "Lambda events",
+   "sub": [
+    "POST /api/v1/events"
+   ],
+   "detail": [
+    "Event intake",
+    "AWS Lambda",
+    "Accepts VIEW and ADD_TO_CART events, hashes the user id with HMAC and stores them with a TTL."
+   ]
+  },
+  {
+   "id": "recs",
+   "icon": "aws-lambda",
+   "x": 590,
+   "y": 420,
+   "w": 170,
+   "label": "Lambda recs",
+   "sub": [
+    "GET /api/v1/recs/*"
+   ],
+   "detail": [
+    "Recommendation API",
+    "AWS Lambda",
+    "Reads the ACTIVE version of also-bought, for-you and bestsellers from the recs table."
+   ]
+  },
+  {
+   "id": "purchaseFn",
+   "icon": "aws-lambda",
+   "x": 590,
+   "y": 580,
+   "w": 170,
+   "label": "Lambda events-purchase",
+   "sub": [
+    "PURCHASE events"
+   ],
+   "detail": [
+    "Purchase intake",
+    "AWS Lambda",
+    "Turns each confirmed order into PURCHASE events in the events table, user id hashed."
+   ]
+  },
+  {
+   "id": "eventsTable",
+   "icon": "res-amazon-dynamodb-table",
+   "x": 820,
+   "y": 100,
+   "w": 170,
+   "label": "DynamoDB events",
+   "sub": [
+    "userIdHash, TTL"
+   ],
+   "detail": [
+    "events table",
+    "Amazon DynamoDB",
+    "VIEW, ADD_TO_CART and PURCHASE events keyed by a hashed user id, never the real id."
+   ]
+  },
+  {
+   "id": "ssm",
+   "icon": "res-aws-systems-manager-parameter-store",
+   "x": 820,
+   "y": 260,
+   "w": 170,
+   "label": "SSM Parameter Store",
+   "sub": [
+    "HMAC key, SecureString"
+   ],
+   "detail": [
+    "HMAC key",
+    "AWS Systems Manager Parameter Store",
+    "Holds the HMAC key that hashes user ids for events and for the for-you lookup."
+   ]
+  },
+  {
+   "id": "recsTable",
+   "icon": "res-amazon-dynamodb-table",
+   "x": 820,
+   "y": 420,
+   "w": 170,
+   "label": "DynamoDB recs",
+   "sub": [
+    "version + ACTIVE pointer"
+   ],
+   "detail": [
+    "recs table",
+    "Amazon DynamoDB",
+    "Each nightly run writes a new version; the API only reads the version the ACTIVE pointer names."
+   ]
+  },
+  {
+   "id": "scheduler",
+   "icon": "res-amazon-eventbridge-scheduler",
+   "x": 1050,
+   "y": 100,
+   "w": 160,
+   "label": "EventBridge Scheduler",
+   "sub": [
+    "cron 02:00 daily"
+   ],
+   "detail": [
+    "Nightly trigger",
+    "Amazon EventBridge Scheduler",
+    "Invokes the pipeline every night at 02:00 Vietnam time."
+   ]
+  },
+  {
+   "id": "pipeline",
+   "icon": "aws-lambda",
+   "size": 60,
+   "x": 1040,
+   "y": 260,
+   "w": 180,
+   "label": "Lambda recs-pipeline",
+   "sub": [
+    "Python 3.14, 512 MB"
+   ],
+   "detail": [
+    "Recommendation pipeline",
+    "AWS Lambda",
+    "Builds also-bought (association rules), for-you (item-based CF) and bestsellers, checks them against the baseline, then switches ACTIVE."
+   ]
+  },
+  {
+   "id": "cloudwatch",
+   "icon": "amazon-cloudwatch",
+   "x": 1260,
+   "y": 100,
+   "w": 170,
+   "label": "Amazon CloudWatch",
+   "sub": [
+    "alarm: no success (prod)"
+   ],
+   "detail": [
+    "Watchdog",
+    "Amazon CloudWatch",
+    "Raises an alarm when the pipeline has not succeeded, whether it failed or never ran."
+   ]
+  },
+  {
+   "id": "products",
+   "icon": "res-amazon-dynamodb-table",
+   "x": 1260,
+   "y": 278,
+   "w": 170,
+   "label": "DynamoDB products",
+   "sub": [
+    "catalog"
+   ],
+   "detail": [
+    "products table",
+    "Amazon DynamoDB",
+    "The pipeline reads the catalog to skip inactive products and fill bestsellers with new arrivals."
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "flow": "request",
+   "points": [
+    [
+     103,
+     286
+    ],
+    [
+     248,
+     286
+    ]
+   ]
+  },
+  {
+   "flow": "request",
+   "points": [
+    [
+     292,
+     286
+    ],
+    [
+     439,
+     286
+    ]
+   ]
+  },
+  {
+   "flow": "track",
+   "points": [
+    [
+     483,
+     286
+    ],
+    [
+     560,
+     286
+    ],
+    [
+     560,
+     126
+    ],
+    [
+     653,
+     126
+    ]
+   ]
+  },
+  {
+   "flow": "track",
+   "points": [
+    [
+     665,
+     184
+    ],
+    [
+     665,
+     276
+    ],
+    [
+     883,
+     276
+    ]
+   ]
+  },
+  {
+   "flow": "track",
+   "points": [
+    [
+     697,
+     126
+    ],
+    [
+     883,
+     126
+    ]
+   ]
+  },
+  {
+   "flow": "purchase",
+   "points": [
+    [
+     461,
+     504
+    ],
+    [
+     461,
+     580
+    ]
+   ]
+  },
+  {
+   "flow": "purchase",
+   "points": [
+    [
+     483,
+     606
+    ],
+    [
+     653,
+     606
+    ]
+   ]
+  },
+  {
+   "flow": "purchase",
+   "points": [
+    [
+     697,
+     606
+    ],
+    [
+     800,
+     606
+    ],
+    [
+     800,
+     220
+    ],
+    [
+     905,
+     220
+    ],
+    [
+     905,
+     184
+    ]
+   ]
+  },
+  {
+   "flow": "pipeline",
+   "points": [
+    [
+     1130,
+     184
+    ],
+    [
+     1130,
+     260
+    ]
+   ]
+  },
+  {
+   "flow": "pipeline",
+   "points": [
+    [
+     927,
+     126
+    ],
+    [
+     1020,
+     126
+    ],
+    [
+     1020,
+     284
+    ],
+    [
+     1100,
+     284
+    ]
+   ]
+  },
+  {
+   "flow": "pipeline",
+   "points": [
+    [
+     1323,
+     304
+    ],
+    [
+     1160,
+     304
+    ]
+   ]
+  },
+  {
+   "flow": "pipeline",
+   "points": [
+    [
+     1100,
+     304
+    ],
+    [
+     1040,
+     304
+    ],
+    [
+     1040,
+     446
+    ],
+    [
+     927,
+     446
+    ]
+   ]
+  },
+  {
+   "flow": "serve",
+   "points": [
+    [
+     483,
+     286
+    ],
+    [
+     560,
+     286
+    ],
+    [
+     560,
+     446
+    ],
+    [
+     653,
+     446
+    ]
+   ]
+  },
+  {
+   "flow": "serve",
+   "points": [
+    [
+     685,
+     420
+    ],
+    [
+     685,
+     296
+    ],
+    [
+     883,
+     296
+    ]
+   ]
+  },
+  {
+   "flow": "serve",
+   "points": [
+    [
+     697,
+     446
+    ],
+    [
+     883,
+     446
+    ]
+   ]
+  },
+  {
+   "flow": "watch",
+   "points": [
+    [
+     1160,
+     284
+    ],
+    [
+     1240,
+     284
+    ],
+    [
+     1240,
+     126
+    ],
+    [
+     1323,
+     126
+    ]
+   ]
+  }
+ ],
+ "badges": [
+  {
+   "flow": "request",
+   "x": 173,
+   "y": 286
+  },
+  {
+   "flow": "track",
+   "x": 560,
+   "y": 200
+  },
+  {
+   "flow": "purchase",
+   "x": 461,
+   "y": 542
+  },
+  {
+   "flow": "pipeline",
+   "x": 1130,
+   "y": 222
+  },
+  {
+   "flow": "serve",
+   "x": 560,
+   "y": 380
+  },
+  {
+   "flow": "watch",
+   "x": 1240,
+   "y": 200
+  }
+ ],
+ "labels": [
+  {
+   "flow": "pipeline",
+   "x": 1240,
+   "y": 298,
+   "text": "read",
+   "anchor": "middle"
+  }
+ ],
+ "texts": [
+  {
+   "x": 1130,
+   "y": 400,
+   "text": "Gate: a version that scores",
+   "anchor": "middle",
+   "class": "ns"
+  },
+  {
+   "x": 1130,
+   "y": 414,
+   "text": "below the bestsellers",
+   "anchor": "middle",
+   "class": "ns"
+  },
+  {
+   "x": 1130,
+   "y": 428,
+   "text": "baseline is not activated",
+   "anchor": "middle",
+   "class": "ns"
+  }
+ ],
+ "hint": "The nightly job also mixes in synthetic events while real traffic is small; the CloudWatch alarm exists in prod only.",
+ "sections": [
+  {
+   "title": "Flow steps",
+   "open": true,
+   "ordered": true,
+   "items": [
+    {
+     "lead": "Web request.",
+     "text": "The browser calls /api/* through CloudFront to the HTTP API."
+    },
+    {
+     "lead": "Track events.",
+     "text": "Lambda events stores VIEW and ADD_TO_CART events with the user id hashed by the HMAC key from SSM."
+    },
+    {
+     "lead": "Purchase events.",
+     "text": "order-confirmed from SNS reaches the events-purchase queue; its Lambda writes PURCHASE events."
+    },
+    {
+     "lead": "Nightly pipeline.",
+     "text": "At 02:00 EventBridge Scheduler runs recs-pipeline: it reads events and products, builds also-bought, for-you and bestsellers, writes a new version and switches ACTIVE only when it beats the baseline."
+    },
+    {
+     "lead": "Serve recommendations.",
+     "text": "Lambda recs reads the ACTIVE version for the home page, the product page and for-you (signed-in users, hashed id)."
+    },
+    {
+     "lead": "Watchdog.",
+     "text": "CloudWatch alarms in prod when the pipeline has not succeeded."
+    }
+   ]
+  }
+ ]
+}

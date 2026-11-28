@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>shop-ai - Sales flow (Workshop 5.4)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one column; diagram on a fixed white "drawing sheet" (AWS icon colours need it), page chrome follows the theme. */
+:root{
+  --bg:#F4F6F8; --fg:#16202B; --muted:#5A6573; --line:#D8DEE5; --card:#FFFFFF; --accent:#E07A00;
+  --sheet:#FFFFFF; --r-s:8px; --r-l:14px;
+  --signin:#2563EB; --request:#64748B; --cart:#E07A00; --order:#7C3AED; --process:#0E8F7E; --failure:#BE123C; --admin:#DB2777;
+  --sans:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F151C; --fg:#E6EBF0; --muted:#9AA6B3; --line:#2A3540; --card:#17202A; --accent:#F59E0B; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F151C; --fg:#E6EBF0; --muted:#9AA6B3; --line:#2A3540; --card:#17202A; --accent:#F59E0B; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:grid;gap:16px}
+header h1{font-size:24px;margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance;text-align:center}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sheet,#pop,details,#notes{border-radius:var(--r-l)}
+.sheet{position:relative;background:var(--sheet);border:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sheet svg{display:block;width:100%;min-width:1100px;height:auto}
+.hint{font-size:13px;color:var(--muted);margin:-8px 0 0}
+details{background:var(--card);border:1px solid var(--line);padding:0 16px}
+summary{cursor:pointer;font-weight:600;padding:14px 0;min-height:24px}
+details ol,details ul{margin:0 0 14px;padding-left:20px}
+details li{margin:4px 0}
+
+/* control bar: a floating media-style player at the bottom - Back / caption / Next, the scrubber on its lower edge; the flow chips sit in the rail on the left */
+#bar{position:fixed;left:16px;right:16px;bottom:16px;z-index:20;width:min(980px,calc(100% - 32px));margin:0 auto;display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;gap:0 10px;padding:6px 10px 0;border:1px solid var(--line);border-radius:var(--r-l);
+  background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(6px);box-shadow:0 8px 24px rgba(15,21,28,.16)}
+.steps{display:contents}
+.chiprow{position:sticky;top:8px;z-index:20;justify-self:center;max-width:100%;min-width:0;display:flex;align-items:center;gap:6px;padding:4px;border:1px solid var(--line);border-radius:var(--r-l);
+  background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(15,21,28,.12)}
+.chips{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.chip{flex:0 0 auto;font:500 13px var(--sans);border:2px solid var(--c,var(--fg));background:transparent;color:var(--fg);border-radius:var(--r-s);
+  padding:0 10px;height:32px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.chip i{display:none}
+.chip .n{font:700 13px var(--mono)}
+.chip .n::after{content:" \00B7"}
+#f-all{--c:var(--fg)}
+#f-all .n::after{content:""}
+.chip[aria-pressed="true"]{background:var(--c);color:#fff}
+#f-all[aria-pressed="true"]{color:var(--bg)}
+#cap{margin:0;min-width:0;font-size:14px;line-height:1.35;border-left:4px solid var(--c,var(--line));padding:2px 0 2px 10px}
+.stepl,.stepr{display:flex}
+.tool{min-height:40px;min-width:40px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:var(--r-s);padding:0 12px;
+  font:500 14px var(--sans);cursor:pointer;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.media{width:40px;height:40px;padding:0;border-radius:50%}
+.media svg{width:16px;height:16px;fill:currentColor}
+.tool[aria-pressed="true"]{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.tool:disabled{opacity:.4;cursor:default}
+.chip:focus-visible,.tool:focus-visible,#scrub:focus-visible,#cap:focus-visible,.nform textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#scrub{grid-column:1/-1;width:100%;margin:0;height:14px;accent-color:var(--c,var(--muted))}
+/* page tools: Note, Pause and Night at the end of the chip bar */
+.tools{display:flex;gap:4px;flex:0 0 auto;padding-left:6px;border-left:1px solid var(--line)}
+.tools .tool{width:32px;min-height:32px;height:32px;padding:0}
+
+/* tooltips on hover and keyboard focus; Escape hides them */
+.tip{position:relative}
+.tip::after{content:attr(data-tip);position:absolute;right:0;top:calc(100% + 8px);z-index:40;pointer-events:none;background:var(--fg);color:var(--bg);
+  font:500 12.5px/1.35 var(--sans);padding:6px 9px;border-radius:var(--r-s);width:max-content;max-width:240px;text-align:left;opacity:0;visibility:hidden;transition:opacity .12s .35s}
+#bar .tip::after{top:auto;bottom:calc(100% + 8px)}
+.stepl .tip::after{right:auto;left:0}
+.tip:hover::after,.tip:focus-visible::after{opacity:1;visibility:visible}
+body.notip .tip::after{opacity:0;visibility:hidden}
+@media (hover:none){.tip::after{display:none}}
+
+/* service card: a popover next to the icon */
+#pop{position:absolute;z-index:18;width:300px;background:var(--card);color:var(--fg);border:1px solid var(--line);border-top:4px solid var(--accent);
+  box-shadow:0 10px 30px rgba(0,0,0,.18);padding:14px 16px}
+#pop .x{position:absolute;right:6px;top:6px;width:36px;height:36px;border:0;background:none;color:var(--muted);font-size:22px;cursor:pointer;border-radius:6px}
+#pop .x:focus-visible{outline:2px solid var(--accent)}
+#detail h2{margin:0;font-size:17px;padding-right:32px}
+#detail .aws{font:500 13px var(--mono);color:var(--muted);margin-top:2px}
+#detail p{margin:8px 0 0}
+
+/* notes, kept in this browser */
+.sheet.pin{cursor:crosshair}
+.note,.nform{position:absolute;z-index:16;transform:translate(-50%,-100%);background:#FFF3B0;color:#16202B;border:1px solid #E2C64A;border-radius:var(--r-s) var(--r-s) var(--r-s) 0;box-shadow:0 6px 16px rgba(0,0,0,.15)}
+.note{padding:6px 8px;font-size:13px;max-width:220px}
+.note b{font:700 12px var(--mono);margin-right:4px}
+.note button{border:0;background:none;cursor:pointer;color:#6b5a00;font-size:15px;min-width:28px;min-height:28px}
+.nform{padding:8px;display:grid;gap:6px;width:240px}
+.nform label{font:600 12px var(--sans)}
+.nform textarea{display:block;width:100%;box-sizing:border-box;margin-top:4px;font:14px var(--sans);border:1px solid #C9A100;border-radius:6px;padding:6px;resize:vertical}
+.nform div{display:flex;gap:6px}
+.nform .tool{min-height:34px;background:#fff;color:#16202B;border-color:#C9A100}
+#notes{background:var(--card);border:1px solid var(--line);padding:10px 16px 10px 36px;margin:0}
+#notes:empty{display:none}
+
+/* diagram */
+svg text{font-family:var(--sans)}
+.gl{font-size:13px;font-weight:600}
+.gs{font-size:12px;font-weight:400;fill:#5A6573}
+.nl{font-size:13px;font-weight:600;fill:#16202B}
+.ns{font-size:11.5px;fill:#545B64}
+.ns2{font-size:12.5px;fill:#3A4450}
+.poolbox{fill:#FFFFFF;stroke:#E8C9A8;stroke-width:1}
+.bedbox{fill:#F7F2FF;stroke:#8C4FFF;stroke-width:1.6}
+.hit{fill:transparent}
+.tile{fill:none}
+.node{cursor:pointer;outline:none;transition:opacity .2s}
+.node:hover .hit,.node:focus-visible .hit{fill:rgba(224,122,0,.08)}
+.node:focus-visible .hit{stroke:var(--accent);stroke-width:2}
+.node.sel .hit{fill:rgba(224,122,0,.14);stroke:#E07A00;stroke-width:1.2}
+.node.sel .poolbox{stroke:#E07A00;stroke-width:2}
+.trunk{stroke:#7D8998;stroke-width:5;fill:none;stroke-linecap:round}
+.flow{fill:none;stroke-width:2.2;transition:opacity .2s}
+body[data-flow] .flow{opacity:.1}
+path.f-signin{stroke:var(--signin)} .mk-signin{fill:var(--signin)} .c-signin{fill:var(--signin)} .b-signin{fill:var(--signin)} .f-signin .flbox{stroke:var(--signin)}
+path.f-request{stroke:var(--request)} .mk-request{fill:var(--request)} .c-request{fill:var(--request)} .b-request{fill:var(--request)} .f-request .flbox{stroke:var(--request)}
+path.f-cart{stroke:var(--cart)} .mk-cart{fill:var(--cart)} .c-cart{fill:var(--cart)} .b-cart{fill:var(--cart)} .f-cart .flbox{stroke:var(--cart)}
+path.f-order{stroke:var(--order)} .mk-order{fill:var(--order)} .c-order{fill:var(--order)} .b-order{fill:var(--order)} .f-order .flbox{stroke:var(--order)}
+path.f-process{stroke:var(--process)} .mk-process{fill:var(--process)} .c-process{fill:var(--process)} .b-process{fill:var(--process)} .f-process .flbox{stroke:var(--process)}
+path.f-failure{stroke:var(--failure)} .mk-failure{fill:var(--failure)} .c-failure{fill:var(--failure)} .b-failure{fill:var(--failure)} .f-failure .flbox{stroke:var(--failure)}
+path.f-admin{stroke:var(--admin)} .mk-admin{fill:var(--admin)} .c-admin{fill:var(--admin)} .b-admin{fill:var(--admin)} .f-admin .flbox{stroke:var(--admin)}
+body[data-flow="signin"] .f-signin,body[data-flow="request"] .f-request,body[data-flow="cart"] .f-cart,body[data-flow="order"] .f-order,body[data-flow="process"] .f-process,body[data-flow="failure"] .f-failure,body[data-flow="admin"] .f-admin{opacity:1;stroke-width:3.2}
+body[data-flow="signin"] .f-signin .flbox,body[data-flow="request"] .f-request .flbox,body[data-flow="cart"] .f-cart .flbox,body[data-flow="order"] .f-order .flbox,body[data-flow="process"] .f-process .flbox,body[data-flow="failure"] .f-failure .flbox,body[data-flow="admin"] .f-admin .flbox{opacity:1}
+.flabel{font-size:12px;font-weight:600;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
+.badge circle{stroke:#fff;stroke-width:2}
+.bt{font-size:12px;font-weight:700;fill:#fff}
+
+/* motion: a pressed flow lights its icons and marches with packets; a hovered icon lights its own arrows; the current step marches */
+body[data-flow] .node{opacity:.35}
+body[data-flow] .node.lit{opacity:1}
+path.flow.on,.sheet.nb path.flow.link,.sheet.walk path.flow.now{stroke-dasharray:10 6;animation:march 1s linear infinite;filter:drop-shadow(0 0 3px currentColor)}
+/* start from 0, not from the static dash offset, so each loop moves exactly one pattern and never jumps */
+@keyframes march{from{stroke-dashoffset:0}to{stroke-dashoffset:-16}}
+/* a highlighted arrow's label sits still in a box instead of glowing */
+.flbox{fill:#fff;stroke:currentColor;stroke-width:1.2;opacity:0;transition:opacity .2s}
+.sheet.nb .fl.link .flbox,.sheet.walk .fl.seen .flbox{opacity:1}
+.pkt{filter:drop-shadow(0 0 4px currentColor)}
+.sheet.nb .flow{opacity:.08!important}
+.sheet.nb .node{opacity:.3}
+.sheet.nb .node.me,.sheet.nb .node.near{opacity:1}
+.sheet.nb .flow.link{opacity:1!important;stroke-width:3.2}
+.sheet.nb .badge.link circle{stroke-width:2}
+/* steps: later arrows and their labels and badges wait; unreached icons fade */
+.sheet.walk .flow{opacity:0!important}
+.sheet.walk .flow.seen:not(path){opacity:1!important}
+.sheet.walk path.flow.past{opacity:.4!important}
+.sheet.walk path.flow.now{opacity:1!important;stroke-width:3.4}
+.sheet.walk .node{opacity:1}
+.sheet.walk .node.off{opacity:.12}
+
+body.still .flow{animation-play-state:paused}
+
+/* Night: an opt-in dark sheet; every icon sits on a white tile so AWS colours still read on white */
+body.night{background:#05070D}
+body.night #bar,body.night .chiprow{background:rgba(5,7,13,.85);border-color:#22304A}
+body.night .sheet{background:radial-gradient(ellipse at 30% 0%,#13254A 0%,#070B16 60%);border-color:#1C2A44}
+body.night .sheet svg rect:not(.hit):not(.tile){fill:transparent!important;stroke:#3A5A8C!important}
+body.night .sheet svg text{fill:#C9D6EC!important}
+body.night .gs,body.night .ns{fill:#7F93B4!important}
+body.night .tile{fill:#fff}
+body.night .flow{filter:drop-shadow(0 0 3px currentColor) drop-shadow(0 0 8px currentColor)}
+body.night .flabel{stroke:#070B16}
+body.night .poolbox{fill:transparent}
+
+/* wide screens: clear space under the floating player */
+@media (min-width:701px){
+  .wrap{max-width:none;padding-bottom:calc(var(--dh,60px) + 48px)}
+}
+
+/* vertical rail (opt-in, wide screens): the committed rail - numbered squares on the left that open to the flow name,
+   the switch top-left, and Note, Pause and Night bottom-left */
+@media (min-width:701px){
+  /* display:contents drops the slim bar's own box, so its backdrop-filter cannot become the containing block of the fixed rail */
+  body.rail .chiprow{display:contents}
+  body.rail .wrap{max-width:none;padding-left:88px}
+  body.rail #bar{left:88px;width:min(980px,calc(100% - 104px))}
+  body.rail .chips{position:fixed;left:14px;top:calc(50% + 10px);transform:translateY(-50%);flex:none;flex-direction:column;overflow:visible;gap:10px;z-index:21}
+  body.rail .chip{width:44px;height:44px;min-height:44px;padding:0;overflow:hidden;white-space:nowrap;background:var(--card);border:2.5px solid var(--c,var(--muted));transition:width .22s ease}
+  body.rail #f-all{--c:var(--muted)}
+  body.rail .chip i,body.rail .chip .n::after{display:none}
+  body.rail .chip .n{flex:0 0 39px;text-align:center;font:700 14px var(--mono)}
+  body.rail .chip .t{opacity:0;transition:opacity .15s;padding-right:16px}
+  body.rail .chip:hover,body.rail .chip:focus-visible{width:240px}
+  body.rail .chip:hover .t,body.rail .chip:focus-visible .t{opacity:1}
+  body.rail .chip[aria-pressed="true"]{background:var(--c,var(--muted));color:#fff;box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c,var(--muted))}
+  body.rail #f-all[aria-pressed="true"]{color:#fff}
+  body.rail .tools{position:fixed;left:16px;bottom:16px;z-index:22;flex-direction:column;gap:8px;padding:0;border:0}
+  body.rail #railbtn{position:fixed;left:16px;top:16px}
+  body.rail .tools .tool{width:44px;height:44px;min-height:44px;box-shadow:0 4px 14px rgba(15,21,28,.12)}
+  body.rail .tools .tip::after{right:auto;left:calc(100% + 10px);top:50%;transform:translateY(-50%)}
+}
+
+/* phone: the player floats at the bottom, the flow chips stay under the title, service card floating above it */
+@media (max-width:700px){
+  .wrap{padding-inline:12px;gap:12px;padding-bottom:calc(var(--dh,200px) + 28px)}
+  #bar{left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));width:auto;margin:0;z-index:30;display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:8px 8px 4px;
+    background:color-mix(in srgb,var(--card) 94%,transparent)}
+  .steps{display:flex;order:1;gap:6px;align-items:center}#scrub{order:2}
+  #cap{flex:1 1 0;min-width:0;font-size:13.5px;cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  #cap.open{display:block;max-height:40vh;overflow:auto}
+  .media{width:44px;height:44px}
+  .chiprow{justify-self:stretch;top:6px}
+  .chip{width:36px;height:36px;padding:0;justify-content:center;flex:0 0 36px}
+  .chip .t,.chip .n::after{display:none}
+  .tools .tool{width:36px;min-height:36px;height:36px}
+  #nt,#railbtn{display:none!important}
+  #pop{position:fixed!important;left:12px!important;right:12px;top:auto!important;bottom:calc(var(--dh,200px) + 24px);width:auto;max-height:45vh;overflow:auto;z-index:31}
+}
+</style>
+</head><body><main class="wrap">
+  <header>
+    <h1>shop-ai - Sales flow (Workshop 5.4)</h1>
+  </header>
+
+  <div class="chiprow" id="chipbar">
+    <div class="chips" role="group" aria-label="Highlight a flow">
+      <button class="chip" id="f-all" data-f="" aria-pressed="true" aria-label="All flows"><span class="n">All</span><span class="t">flows</span></button>
+      <button class="chip" id="f-signin" data-f="signin" aria-pressed="false" aria-label="Flow 1: Sign in"><i style="background:var(--signin)"></i><span class="n">1</span><span class="t">Sign in</span></button>
+    <button class="chip" id="f-request" data-f="request" aria-pressed="false" aria-label="Flow 2: API request"><i style="background:var(--request)"></i><span class="n">2</span><span class="t">API request</span></button>
+    <button class="chip" id="f-cart" data-f="cart" aria-pressed="false" aria-label="Flow 3: Cart"><i style="background:var(--cart)"></i><span class="n">3</span><span class="t">Cart</span></button>
+    <button class="chip" id="f-order" data-f="order" aria-pressed="false" aria-label="Flow 4: Place order"><i style="background:var(--order)"></i><span class="n">4</span><span class="t">Place order</span></button>
+    <button class="chip" id="f-process" data-f="process" aria-pressed="false" aria-label="Flow 5: Process order"><i style="background:var(--process)"></i><span class="n">5</span><span class="t">Process order</span></button>
+    <button class="chip" id="f-failure" data-f="failure" aria-pressed="false" aria-label="Flow 6: Failures to DLQ"><i style="background:var(--failure)"></i><span class="n">6</span><span class="t">Failures to DLQ</span></button>
+    <button class="chip" id="f-admin" data-f="admin" aria-pressed="false" aria-label="Flow 7: Admin"><i style="background:var(--admin)"></i><span class="n">7</span><span class="t">Admin</span></button>
+    </div>
+    <div class="tools" role="toolbar" aria-label="Notes, motion and theme">
+  <button type="button" class="tool tip" id="railbtn" aria-label="Vertical rail" aria-pressed="false" data-tip="Switch the flows between the bar and a vertical rail on the left">&#8645;</button>
+  <button type="button" class="tool tip" id="nt" aria-label="Add a note" aria-pressed="false" data-tip="Add a note: then click a spot or press Enter on an icon">&#9998;</button>
+  <button type="button" class="tool tip" id="motion" aria-label="Pause motion" aria-pressed="false" data-tip="Pause or resume moving dashes and packets"><span aria-hidden="true">&#10074;&#10074;</span></button>
+  <button type="button" class="tool tip" id="neon" aria-label="Night mode" aria-pressed="false" data-tip="Night mode: dark sheet, glowing arrows">&#9790;</button>
+    </div>
+  </div>
+
+  <div id="bar">
+    <div class="steps">
+      <span class="stepl"><button type="button" class="tool media tip" id="pv" aria-label="Previous arrow" data-tip="Previous arrow (back to overview from arrow 1)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button></span>
+      <p id="cap" aria-live="polite">Cart, order placement, asynchronous order processing and admin order management. Press a numbered flow to walk its arrows; click a component for its role.</p>
+      <span class="stepr">
+        <button type="button" class="tool media tip" id="nx" aria-label="Next arrow" data-tip="Next arrow - starts the walk from arrow 1"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11 2h2v12h-2zM2 2l8 6-8 6z"/></svg></button>
+      </span>
+    </div>
+    <input id="scrub" type="range" min="0" max="1" value="0" aria-label="Arrow" title="Drag to walk the arrows; far left shows them all">
+    <span id="hop" class="sr" aria-live="polite"></span>
+  </div>
+
+  <div class="sheet"><svg id="dia" viewBox="0 0 1480 712" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="shop-ai - Sales flow (Workshop 5.4)"><defs><symbol id="i-group-aws-cloud" viewBox="0 0 40 40"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><rect fill="#242F3E" x="0" y="0" width="40" height="40"></rect><path d="M28.993,27.9952689 L11.487,27.9762689 C9.121,27.9742689 7.154,26.1292689 7.012,23.7752689 C7.004,23.6522689 7,23.5262689 7,23.3972689 C7,20.2992689 9.091,19.2872689 10.337,18.9592689 C10.577,18.8962689 10.735,18.6662689 10.707,18.4192689 C10.676,18.1492689 10.659,17.8752689 10.659,17.5962689 C10.659,15.1322689 12.308,12.4822689 14.415,11.5632689 C15.359,11.1502689 16.232,10.9862689 17.023,10.9862689 C19.276,10.9862689 20.867,12.3152689 21.561,13.0332689 C22.329,13.8262689 22.927,14.8382689 23.34,16.0422689 C23.4,16.2192689 23.555,16.3472689 23.74,16.3742689 C23.918,16.4012689 24.109,16.3232689 24.219,16.1712689 C24.807,15.3502689 25.766,14.9822689 26.659,15.2392689 C27.782,15.5602689 28.516,16.7272689 28.62,18.3072689 C28.578,18.5762689 28.759,18.8292689 29.027,18.8772689 C30.222,19.0892689 33,19.9572689 33,23.4402689 C33,27.5892689 29.114,27.9822689 28.993,27.9952689 M29.594,17.9742689 C29.379,16.0672689 28.4,14.6962689 26.934,14.2782689 C25.899,13.9822689 24.811,14.2452689 23.989,14.9502689 C23.553,13.9362689 22.979,13.0602689 22.28,12.3382689 C20.023,10.0052689 16.933,9.37226889 14.014,10.6462689 C11.531,11.7302689 9.659,14.7182689 9.659,17.5962689 C9.659,17.7702689 9.665,17.9432689 9.676,18.1142689 C8.319,18.5732689 6,19.8752689 6,23.3972689 C6,23.5492689 6.004,23.6962689 6.014,23.8382689 C6.188,26.7162689 8.593,28.9732689 11.486,28.9762689 L29.034,28.9932689 C29.084,28.9892689 34,28.5192689 34,23.4402689 C34,19.5022689 31.003,18.3142689 29.594,17.9742689" fill="#FFFFFF"></path></g></symbol><symbol id="i-group-region" viewBox="0 0 40 40"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><rect fill="#00A4A6" x="0" y="0" width="40" height="40"></rect><path d="M14,20.026 L14,11.026 L29.293,11.026 L25.146,15.172 C24.951,15.368 24.951,15.684 25.146,15.88 L29.293,20.026 L14,20.026 Z M26.207,15.526 L30.854,10.88 C30.996,10.736 31.039,10.522 30.962,10.335 C30.885,10.148 30.702,10.026 30.5,10.026 L14,10.026 L14,8.97 C14.596,8.76 15.026,8.198 15.026,7.531 C15.026,6.687 14.34,6 13.495,6 C12.65,6 11.963,6.687 11.963,7.531 C11.963,8.201 12.398,8.766 13,8.973 L13,33.026 L10,33.026 L10,34.026 L17,34.026 L17,33.026 L14,33.026 L14,21.026 L30.5,21.026 C30.702,21.026 30.885,20.904 30.962,20.717 C31.039,20.53 30.996,20.316 30.854,20.172 L26.207,15.526 Z" fill="#FFFFFF"></path></g></symbol><symbol id="i-res-users" viewBox="0 0 48 48"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><path d="M28.639,9.286 C28.639,6.371 31.052,4 34.019,4 C36.985,4 39.397,6.371 39.397,9.286 C39.397,12.201 36.985,14.572 34.019,14.572 C31.052,14.572 28.639,12.201 28.639,9.286 L28.639,9.286 Z M40.163,16.334 C39.516,15.932 38.833,15.6 38.128,15.333 C40.098,14.023 41.397,11.802 41.397,9.286 C41.397,5.269 38.087,2 34.019,2 C29.95,2 26.639,5.269 26.639,9.286 C26.639,11.796 27.932,14.014 29.895,15.325 C28.614,15.808 27.41,16.515 26.349,17.425 L27.652,18.943 C29.434,17.414 31.689,16.572 34,16.572 C35.802,16.572 37.569,17.077 39.109,18.033 C41.849,19.735 43.647,22.725 43.953,26 L34,26 L34,28 L45,28 C45.553,28 46,27.553 46,27 C46,22.657 43.764,18.57 40.163,16.334 L40.163,16.334 Z M8.639,9.286 C8.639,6.371 11.052,4 14.019,4 C16.985,4 19.397,6.371 19.397,9.286 C19.397,12.201 16.985,14.572 14.019,14.572 C11.052,14.572 8.639,12.201 8.639,9.286 L8.639,9.286 Z M14,26 L4.046,26 C4.53,20.717 8.81,16.572 14,16.572 C15.802,16.572 17.569,17.077 19.109,18.033 C19.541,18.302 19.958,18.608 20.349,18.943 L21.652,17.426 C21.184,17.024 20.684,16.657 20.163,16.334 C19.516,15.932 18.833,15.6 18.128,15.333 C20.098,14.023 21.397,11.802 21.397,9.286 C21.397,5.269 18.087,2 14.019,2 C9.95,2 6.639,5.269 6.639,9.286 C6.639,11.801 7.937,14.023 9.907,15.332 C5.302,17.071 2,21.638 2,27 C2,27.553 2.448,28 3,28 L14,28 L14,26 Z M14.046,44 C14.53,38.717 18.81,34.572 24,34.572 C25.802,34.572 27.569,35.077 29.109,36.033 C31.849,37.735 33.647,40.725 33.953,44 L14.046,44 Z M18.639,27.286 C18.639,24.371 21.052,22 24.019,22 C26.985,22 29.397,24.371 29.397,27.286 C29.397,30.201 26.985,32.572 24.019,32.572 C21.052,32.572 18.639,30.201 18.639,27.286 L18.639,27.286 Z M30.163,34.334 C29.516,33.932 28.833,33.6 28.128,33.333 C30.098,32.023 31.397,29.802 31.397,27.286 C31.397,23.269 28.087,20 24.019,20 C19.95,20 16.639,23.269 16.639,27.286 C16.639,29.801 17.937,32.023 19.907,33.332 C15.302,35.071 12,39.638 12,45 C12,45.553 12.448,46 13,46 L35,46 C35.553,46 36,45.553 36,45 C36,40.657 33.764,36.57 30.163,34.334 L30.163,34.334 Z" fill="#242F3E"></path></g></symbol><symbol id="i-amazon-cloudfront" viewBox="0 0 80 80"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g fill="#8C4FFF"><rect x="0" y="0" width="80" height="80"></rect></g><path d="M55.122,52.123 C55.122,50.469 53.776,49.123 52.122,49.123 C50.468,49.123 49.122,50.469 49.122,52.123 C49.122,53.777 50.468,55.123 52.122,55.123 C53.776,55.123 55.122,53.777 55.122,52.123 L55.122,52.123 Z M57.122,52.123 C57.122,54.88 54.879,57.123 52.122,57.123 C49.365,57.123 47.122,54.88 47.122,52.123 C47.122,49.366 49.365,47.123 52.122,47.123 C54.879,47.123 57.122,49.366 57.122,52.123 L57.122,52.123 Z M30.392,37.692 C30.392,36.038 29.046,34.692 27.392,34.692 C25.737,34.692 24.392,36.038 24.392,37.692 C24.392,39.346 25.737,40.692 27.392,40.692 C29.046,40.692 30.392,39.346 30.392,37.692 L30.392,37.692 Z M32.392,37.692 C32.392,40.449 30.148,42.692 27.392,42.692 C24.635,42.692 22.392,40.449 22.392,37.692 C22.392,34.935 24.635,32.692 27.392,32.692 C30.148,32.692 32.392,34.935 32.392,37.692 L32.392,37.692 Z M39.73,22.007 C39.73,23.661 41.076,25.007 42.73,25.007 C44.385,25.007 45.73,23.661 45.73,22.007 C45.73,20.352 44.385,19.007 42.73,19.007 C41.076,19.007 39.73,20.352 39.73,22.007 L39.73,22.007 Z M37.73,22.007 C37.73,19.25 39.974,17.007 42.73,17.007 C45.487,17.007 47.73,19.25 47.73,22.007 C47.73,24.764 45.487,27.007 42.73,27.007 C39.974,27.007 37.73,24.764 37.73,22.007 L37.73,22.007 Z M66,40 C66,30.727 61.028,22.148 53.012,17.509 C51.575,17.799 50.185,18.196 48.451,18.823 L47.771,16.942 C48.676,16.616 49.486,16.352 50.266,16.126 C47.046,14.737 43.548,14 40,14 C38.311,14 36.649,14.175 35.025,14.492 C36.201,15.18 37.244,15.866 38.257,16.634 L37.048,18.227 C35.62,17.145 34.14,16.228 32.197,15.21 C22.378,18.298 15.306,26.958 14.183,37.128 C16.242,36.711 18.219,36.484 20.414,36.43 L20.463,38.429 C18.163,38.486 16.187,38.73 14.027,39.205 C14.018,39.47 14,39.738 14,40 C14,48.658 18.283,56.636 25.327,61.447 C24.074,57.716 23.45,54.19 23.45,50.746 C23.45,48.782 23.788,47.169 24.145,45.462 C24.228,45.067 24.312,44.665 24.394,44.248 L26.357,44.635 C26.273,45.059 26.187,45.47 26.103,45.873 C25.753,47.545 25.45,48.989 25.45,50.746 C25.45,54.654 26.308,58.695 28.054,63.083 C31.773,65.014 35.789,66 40,66 C42.756,66 45.446,65.56 48.012,64.714 C49.019,62.727 49.766,60.852 50.39,58.699 L52.311,59.256 C51.855,60.826 51.332,62.253 50.709,63.677 C52.323,62.951 53.85,62.053 55.283,61.005 C54.938,60.159 54.568,59.318 54.159,58.499 L55.948,57.604 C56.296,58.3 56.615,59.012 56.92,59.728 C62.705,54.775 66,47.66 66,40 L66,40 Z M68,40 C68,48.727 64.034,56.799 57.121,62.149 C55.409,63.479 53.552,64.583 51.589,65.472 C50.756,65.85 49.908,66.2 49.036,66.494 C46.156,67.493 43.113,68 40,68 C35.4,68 30.832,66.854 26.788,64.686 C17.667,59.806 12,50.347 12,40 C12,39.314 12.018,38.792 12.059,38.309 C12.74,26.625 20.756,16.512 32.001,13.166 C34.562,12.393 37.255,12 40,12 C44.808,12 49.539,13.238 53.684,15.579 C62.513,20.525 68,29.884 68,40 L68,40 Z M37.314,25.463 L36,23.956 C33.758,25.912 32.014,27.989 29.977,31.126 L31.655,32.215 C33.583,29.244 35.223,27.288 37.314,25.463 L37.314,25.463 Z M34.275,38.427 L33.625,40.318 C38.218,41.895 42.225,44.411 46.234,48.236 L47.615,46.789 C43.389,42.758 39.15,40.101 34.275,38.427 L34.275,38.427 Z M47.646,26.668 C51.398,32.39 53.511,38.671 53.925,45.338 L51.929,45.462 C51.536,39.146 49.533,33.192 45.975,27.765 L47.646,26.668 Z" fill="#FFFFFF"></path></g></symbol><symbol id="i-amazon-cognito" viewBox="0 0 80 80"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g fill="#DD344C"><rect x="0" y="0" width="80" height="80"></rect></g><path d="M16.9635609,35.8079225 L29.8688192,35.8079225 L29.8688192,33.8253841 L16.9635609,33.8253841 L16.9635609,35.8079225 Z M61.3755183,50.2308895 L62.7792133,51.6325441 L55.4073327,58.9937093 C55.2127611,59.1870067 54.9586268,59.2841511 54.7054852,59.2841511 C54.4513509,59.2841511 54.1972166,59.1870067 54.0036377,58.9937093 L50.294865,55.2913188 L51.69856,53.8896641 L54.7054852,56.8912273 L61.3755183,50.2308895 Z M65.9439798,55.6937741 C65.7176414,57.5573602 64.9592093,59.29109 63.7471077,60.708605 C62.8864262,61.7157345 61.7994064,62.5484006 60.604181,63.1154066 C59.0009508,63.8757101 57.2200251,64.1641694 55.4460485,63.9480727 C53.7207147,63.7379237 52.0946522,63.057913 50.7396,61.9823859 C48.1367087,59.9155896 46.8223578,56.7108163 47.2224208,53.4088985 C47.6006441,50.2883831 49.4917608,47.5663578 52.2802893,46.127035 C53.6164799,45.4381029 55.0797377,45.0842198 56.5697987,45.0842198 C56.9519928,45.0842198 57.3371652,45.1080102 57.7213448,45.1545999 C60.8344902,45.534256 63.549558,47.4365016 64.9810489,50.2427847 C65.839745,51.9259598 66.1723036,53.8113538 65.9439798,55.6937741 L65.9439798,55.6937741 Z M66.750062,49.3437035 C65.0177793,45.9476152 61.731902,43.6458881 57.9615811,43.1869305 C55.6813213,42.9083838 53.4030468,43.3167868 51.3689796,44.3655496 C47.9957436,46.1062183 45.7085347,49.3982233 45.2508944,53.1709939 C44.7684363,57.1608525 46.3577685,61.0357238 49.5046661,63.5347135 C51.1456193,64.8372412 53.1171457,65.6609859 55.2048194,65.9157421 C55.6674233,65.9722445 56.1300272,66 56.5916383,66 C58.2713073,66 59.9301294,65.6292653 61.455928,64.9056388 C62.9023096,64.2196805 64.2176533,63.212551 65.2570229,61.9952724 C66.7232588,60.2803767 67.6425103,58.1838423 67.9155061,55.9316787 C68.1914801,53.6567158 67.788439,51.3787792 66.750062,49.3437035 L66.750062,49.3437035 Z M26.8906827,41.7555378 L30.8615314,41.7555378 L30.8615314,39.7729994 L26.8906827,39.7729994 L26.8906827,41.7555378 Z M16.9635609,41.7555378 L24.9052583,41.7555378 L24.9052583,39.7729994 L16.9635609,39.7729994 L16.9635609,41.7555378 Z M16.1058576,15.9825384 L60.5078879,15.9825384 C61.6773028,15.9825384 62.6283211,17.1393496 62.6283211,18.5608296 L62.6283211,25.8952305 L59.6501845,25.8952305 L59.6501845,20.9388844 C59.6501845,20.3917038 59.2064422,19.9476152 58.6574724,19.9476152 L35.8250923,19.9476152 C35.2761224,19.9476152 34.8323801,20.3917038 34.8323801,20.9388844 L34.8323801,25.8952305 L13.9854244,25.8952305 L13.9854244,18.5608296 C13.9854244,17.16314 14.9572896,15.9825384 16.1058576,15.9825384 L16.1058576,15.9825384 Z M47.256173,25.6077624 C49.5612507,25.6077624 51.436484,27.4614358 51.436484,29.7393725 C51.436484,31.2411453 50.6075693,32.6229746 49.2733642,33.3466011 C48.0066634,34.0335507 46.4798721,34.0246292 45.2300474,33.3475924 C43.9008058,32.6219833 43.075862,31.240154 43.075862,29.7393725 C43.075862,27.4614358 44.9501026,25.6077624 47.256173,25.6077624 L47.256173,25.6077624 Z M13.9854244,47.1083915 L13.9854244,27.8777689 L34.8323801,27.8777689 L34.8323801,44.7293454 C34.8323801,45.2775173 35.2761224,45.7206146 35.8250923,45.7206146 L46.2029054,45.7206146 L46.2029054,43.7380762 L37.9117733,43.7380762 C37.9981392,39.7710168 40.6357755,36.3441992 44.4338923,35.249838 C46.1890074,36.0696176 48.2846228,36.0775478 50.0665412,35.2488467 C52.2286683,35.8733463 54.1207777,37.3176255 55.2931708,39.2535743 L56.9917013,38.2266194 C55.7885342,36.2430897 53.9629365,34.6947272 51.8454814,33.7946548 C52.8381936,32.694346 53.4219083,31.2629532 53.4219083,29.7393725 C53.4219083,26.3680659 50.6552195,23.625224 47.256173,23.625224 C43.8561338,23.625224 41.0904377,26.3680659 41.0904377,29.7393725 C41.0904377,31.2570056 41.6681962,32.683442 42.6539593,33.7837508 C40.0004397,34.8999199 37.9276567,36.9924892 36.8178045,39.572763 L36.8178045,21.9301536 L57.6647602,21.9301536 L57.6647602,37.7904609 L59.6501845,37.7904609 L59.6501845,27.8777689 L62.6283211,27.8777689 L62.6293138,42.746807 L64.6147382,42.746807 L64.6137454,18.5608296 C64.6137454,16.0459796 62.7722643,14 60.5078879,14 L16.1058576,14 C13.8414811,14 12,16.0459796 12,18.5608296 L12,47.1083915 C12,49.6232415 13.8414811,51.6682298 16.1058576,51.6682298 L42.7740775,51.6682298 L42.7740775,49.6856914 L16.1058576,49.6856914 C14.9572896,49.6856914 13.9854244,48.5060811 13.9854244,47.1083915 L13.9854244,47.1083915 Z" fill="#FFFFFF"></path></g></symbol><symbol id="i-amazon-api-gateway" viewBox="0 0 80 80"><g><g><rect width="80" height="80" fill="#8C4FFF"/></g><g><path fill-rule="evenodd" clip-rule="evenodd" d="M34.065 55.6324H37V53.6153H34.065V55.6324ZM39 55.6324H42V53.6153H39V55.6324ZM27 14.6295L14 21.0821V61.1934L27 65.5896V14.6295ZM29 27.3934V53.6153H32V55.6324H29V66.9915C29 67.3162 28.845 67.6208 28.584 67.8104C28.412 67.9355 28.207 68 28 68C27.894 68 27.786 67.9829 27.682 67.9476L12.682 62.8756C12.274 62.7375 12 62.3522 12 61.9196V20.4537C12 20.0705 12.217 19.7185 12.559 19.5491L27.559 12.1041C27.868 11.9498 28.235 11.9679 28.528 12.1525C28.821 12.3361 29 12.6598 29 13.0087V25.3764H32V27.3934H29ZM44 55.6324H47V53.6153H44V55.6324ZM44.065 27.3934H47V25.3764H44.065V27.3934ZM39.065 27.3934H42V25.3764H39.065V27.3934ZM34.065 27.3934H37V25.3764H34.065V27.3934ZM66 21.0821L53 14.6295V65.5896L66 61.1934V21.0821ZM68 61.9196C68 62.3522 67.726 62.7375 67.318 62.8756L52.318 67.9476C52.214 67.9829 52.106 68 52 68C51.793 68 51.588 67.9355 51.416 67.8104C51.155 67.6208 51 67.3162 51 66.9915V55.6324H49.065V53.6153H51V27.3934H49.065V25.3764H51V13.0087C51 12.6598 51.179 12.3361 51.472 12.1525C51.765 11.9679 52.131 11.9498 52.441 12.1041L67.441 19.5491C67.783 19.7185 68 20.0705 68 20.4537V61.9196ZM42.934 33.8067L41.066 33.0826L36.066 46.1935L37.934 46.9176L42.934 33.8067ZM49.707 40.2089C50.098 39.8145 50.098 39.1761 49.707 38.7828L45.707 34.7487L44.293 36.1747L47.586 39.4958L44.293 42.8169L45.707 44.243L49.707 40.2089ZM34.293 44.243L30.293 40.2089C29.902 39.8145 29.902 39.1761 30.293 38.7828L34.293 34.7487L35.707 36.1747L32.414 39.4958L35.707 42.8169L34.293 44.243Z" fill="white"/></g></g></symbol><symbol id="i-aws-lambda" viewBox="0 0 80 80"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g fill="#ED7100"><rect x="0" y="0" width="80" height="80"></rect></g><path d="M28.0075352,66 L15.5907274,66 L29.3235885,37.296 L35.5460249,50.106 L28.0075352,66 Z M30.2196674,34.553 C30.0512768,34.208 29.7004629,33.989 29.3175745,33.989 L29.3145676,33.989 C28.9286723,33.99 28.5778583,34.211 28.4124746,34.558 L13.097944,66.569 C12.9495999,66.879 12.9706487,67.243 13.1550766,67.534 C13.3374998,67.824 13.6582439,68 14.0020416,68 L28.6420072,68 C29.0299071,68 29.3817234,67.777 29.5481094,67.428 L37.563706,50.528 C37.693006,50.254 37.6920037,49.937 37.5586944,49.665 L30.2196674,34.553 Z M64.9953491,66 L52.6587274,66 L32.866809,24.57 C32.7014253,24.222 32.3486067,24 31.9617091,24 L23.8899822,24 L23.8990031,14 L39.7197081,14 L59.4204149,55.429 C59.5857986,55.777 59.9386172,56 60.3255148,56 L64.9953491,56 L64.9953491,66 Z M65.9976745,54 L60.9599868,54 L41.25928,12.571 C41.0938963,12.223 40.7410777,12 40.3531778,12 L22.89768,12 C22.3453987,12 21.8963569,12.447 21.8953545,12.999 L21.884329,24.999 C21.884329,25.265 21.9885708,25.519 22.1780103,25.707 C22.3654452,25.895 22.6200358,26 22.8866544,26 L31.3292417,26 L51.1221625,67.43 C51.2885485,67.778 51.6393624,68 52.02626,68 L65.9976745,68 C66.5519605,68 67,67.552 67,67 L67,55 C67,54.448 66.5519605,54 65.9976745,54 L65.9976745,54 Z" fill="#FFFFFF"></path></g></symbol><symbol id="i-res-amazon-dynamodb-table" viewBox="0 0 48 48"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><path d="M13.355,11.862 L45.928,11.862 L45.928,2 L13.355,2 L13.355,11.862 Z M15.355,9.862 L43.927,9.862 L43.927,4.001 L15.355,4.001 L15.355,9.862 Z M2,11.862 L11.861,11.862 L11.861,2 L2,2 L2,11.862 Z M4,9.862 L9.862,9.862 L9.862,4.001 L4,4.001 L4,9.862 Z M13.355,23.217 L45.928,23.217 L45.928,13.356 L13.355,13.356 L13.355,23.217 Z M15.355,21.217 L43.927,21.217 L43.927,15.356 L15.355,15.356 L15.355,21.217 Z M2,23.217 L11.861,23.217 L11.861,13.356 L2,13.356 L2,23.217 Z M4,21.217 L9.862,21.217 L9.862,15.356 L4,15.356 L4,21.217 Z M13.355,34.572 L45.928,34.572 L45.928,24.711 L13.355,24.711 L13.355,34.572 Z M15.355,32.572 L43.927,32.572 L43.927,26.71 L15.355,26.71 L15.355,32.572 Z M2,34.572 L11.861,34.572 L11.861,24.711 L2,24.711 L2,34.572 Z M4,32.572 L9.862,32.572 L9.862,26.71 L4,26.71 L4,32.572 Z M13.355,45.927 L45.928,45.927 L45.928,36.066 L13.355,36.066 L13.355,45.927 Z M15.355,43.928 L43.927,43.928 L43.927,38.066 L15.355,38.066 L15.355,43.928 Z M2,45.927 L11.861,45.927 L11.861,36.066 L2,36.066 L2,45.927 Z M4,43.928 L9.862,43.928 L9.862,38.066 L4,38.066 L4,43.928 Z" fill="#C925D1"></path></g></symbol><symbol id="i-res-amazon-simple-queue-service-queue" viewBox="0 0 48 48"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><path d="M37.449,22.261 L37.449,26.221 L35.026,24.207 L37.449,22.261 Z M37.81,29.121 C37.993,29.273 38.22,29.352 38.449,29.352 C38.594,29.352 38.738,29.321 38.874,29.257 C39.224,29.092 39.449,28.74 39.449,28.352 L39.449,20.176 C39.449,19.791 39.228,19.441 38.882,19.275 C38.535,19.108 38.123,19.156 37.823,19.397 L32.819,23.414 C32.585,23.602 32.448,23.885 32.4449503,24.185 C32.442,24.486 32.575,24.771 32.806,24.963 L37.81,29.121 Z M10.527,22.307 L12.951,24.322 L10.527,26.267 L10.527,22.307 Z M9.095,29.253 C9.232,29.32 9.38,29.352 9.527,29.352 C9.751,29.352 9.972,29.277 10.153,29.132 L15.158,25.115 C15.392,24.927 15.529,24.644 15.5320497,24.344 C15.535,24.043 15.402,23.758 15.171,23.566 L10.166,19.407 C9.868,19.16 9.453,19.107 9.102,19.271 C8.752,19.436 8.527,19.788 8.527,20.176 L8.527,28.352 C8.527,28.737 8.748,29.087 9.095,29.253 L9.095,29.253 Z M28.368,34.027 L30.368,34.027 L30.368,14.747 L28.368,14.747 L28.368,34.027 Z M23.121,34.027 L25.121,34.027 L25.121,14.747 L23.121,14.747 L23.121,34.027 Z M17.711,34.027 L19.711,34.027 L19.711,14.747 L17.711,14.747 L17.711,34.027 Z M3.999,35.773 L43.977,35.773 L43.977,13.001 L3.999,13.001 L3.999,35.773 Z M44.977,11 L3,11 C2.447,11 2,11.448 2,12 L2,36.773 C2,37.325 2.447,37.773 3,37.773 L44.977,37.773 C45.53,37.773 45.977,37.325 45.977,36.773 L45.977,12 C45.977,11.448 45.53,11 44.977,11 L44.977,11 Z" fill="#E7157B"></path></g></symbol><symbol id="i-amazon-simple-notification-service" viewBox="0 0 80 80"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g fill="#E7157B"><rect x="0" y="0" width="80" height="80"></rect></g><path d="M17,38 C18.103,38 19,38.897 19,40 C19,41.103 18.103,42 17,42 C15.897,42 15,41.103 15,40 C15,38.897 15.897,38 17,38 L17,38 Z M41,64 C29.314,64 19.289,55.466 17.194,43.98 C18.965,43.894 20.427,42.659 20.857,41 L27,41 L27,39 L20.857,39 C20.427,37.342 18.966,36.107 17.195,36.02 C19.285,24.71 29.511,16 41,16 C45.313,16 49.832,17.622 54.429,20.821 L55.571,19.179 C50.633,15.743 45.73,14 41,14 C28.27,14 16.949,23.865 15.063,36.521 C13.839,37.207 13,38.5 13,40 C13,41.5 13.839,42.793 15.063,43.478 C16.97,56.341 28.056,66 41,66 C46.407,66 51.942,64.157 56.585,60.811 L55.415,59.189 C51.11,62.292 45.991,64 41,64 L41,64 Z M30.101,36.442 C31.955,36.895 34.275,37 36,37 C37.642,37 39.823,36.905 41.629,36.506 L37.105,45.553 C37.036,45.691 37,45.845 37,46 L37,50.453 C36.199,50.964 34.833,51.812 34,51.986 L34,46 C34,45.868 33.974,45.737 33.923,45.615 L30.101,36.442 Z M36,33 C40.025,33 42.174,33.604 42.841,34 C42.174,34.396 40.025,35 36,35 C31.975,35 29.826,34.396 29.159,34 C29.826,33.604 31.975,33 36,33 L36,33 Z M33,54 L34,54 C34.043,54 34.086,53.997 34.128,53.992 C35.352,53.833 36.909,52.887 38.272,52.013 L38.535,51.845 C38.824,51.661 39,51.342 39,51 L39,46.236 L44.559,35.12 C44.833,34.801 45,34.434 45,34 C45,31.39 39.361,31 36,31 C32.639,31 27,31.39 27,34 C27,34.366 27.12,34.684 27.32,34.967 L32,46.2 L32,53 C32,53.552 32.447,54 33,54 L33,54 Z M62,53 C63.103,53 64,53.897 64,55 C64,56.103 63.103,57 62,57 C60.897,57 60,56.103 60,55 C60,53.897 60.897,53 62,53 L62,53 Z M62,23 C63.103,23 64,23.897 64,25 C64,26.103 63.103,27 62,27 C60.897,27 60,26.103 60,25 C60,23.897 60.897,23 62,23 L62,23 Z M64,38 C65.103,38 66,38.897 66,40 C66,41.103 65.103,42 64,42 C62.897,42 62,41.103 62,40 C62,38.897 62.897,38 64,38 L64,38 Z M54,41 L60.143,41 C60.589,42.72 62.142,44 64,44 C66.206,44 68,42.206 68,40 C68,37.794 66.206,36 64,36 C62.142,36 60.589,37.28 60.143,39 L54,39 L54,26 L58.143,26 C58.589,27.72 60.142,29 62,29 C64.206,29 66,27.206 66,25 C66,22.794 64.206,21 62,21 C60.142,21 58.589,22.28 58.143,24 L53,24 C52.447,24 52,24.448 52,25 L52,39 L45,39 L45,41 L52,41 L52,55 C52,55.552 52.447,56 53,56 L58.143,56 C58.589,57.72 60.142,59 62,59 C64.206,59 66,57.206 66,55 C66,52.794 64.206,51 62,51 C60.142,51 58.589,52.28 58.143,54 L54,54 L54,41 Z" fill="#FFFFFF"></path></g></symbol><symbol id="i-amazon-simple-email-service" viewBox="0 0 80 80"><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g fill="#DD344C"><rect x="0" y="0" width="80" height="80"></rect></g><path d="M57,60.999875 C57,59.373846 55.626,57.9998214 54,57.9998214 C52.374,57.9998214 51,59.373846 51,60.999875 C51,62.625904 52.374,63.9999286 54,63.9999286 C55.626,63.9999286 57,62.625904 57,60.999875 L57,60.999875 Z M40,59.9998571 C38.374,59.9998571 37,61.3738817 37,62.9999107 C37,64.6259397 38.374,65.9999643 40,65.9999643 C41.626,65.9999643 43,64.6259397 43,62.9999107 C43,61.3738817 41.626,59.9998571 40,59.9998571 L40,59.9998571 Z M26,57.9998214 C24.374,57.9998214 23,59.373846 23,60.999875 C23,62.625904 24.374,63.9999286 26,63.9999286 C27.626,63.9999286 29,62.625904 29,60.999875 C29,59.373846 27.626,57.9998214 26,57.9998214 L26,57.9998214 Z M28.605,42.9995536 L51.395,42.9995536 L43.739,36.1104305 L40.649,38.7584778 C40.463,38.9194807 40.23,38.9994821 39.999,38.9994821 C39.768,38.9994821 39.535,38.9194807 39.349,38.7584778 L36.26,36.1104305 L28.605,42.9995536 Z M27,28.1732888 L27,41.7545313 L34.729,34.7984071 L27,28.1732888 Z M51.297,26.9992678 L28.703,26.9992678 L39.999,36.6824408 L51.297,26.9992678 Z M53,41.7545313 L53,28.1732888 L45.271,34.7974071 L53,41.7545313 Z M59,60.999875 C59,63.7099234 56.71,65.9999643 54,65.9999643 C51.29,65.9999643 49,63.7099234 49,60.999875 C49,58.6308327 50.75,56.5837961 53,56.1057876 L53,52.9997321 L41,52.9997321 L41,58.1058233 C43.25,58.5838319 45,60.6308684 45,62.9999107 C45,65.7099591 42.71,68 40,68 C37.29,68 35,65.7099591 35,62.9999107 C35,60.6308684 36.75,58.5838319 39,58.1058233 L39,52.9997321 L27,52.9997321 L27,56.1057876 C29.25,56.5837961 31,58.6308327 31,60.999875 C31,63.7099234 28.71,65.9999643 26,65.9999643 C23.29,65.9999643 21,63.7099234 21,60.999875 C21,58.6308327 22.75,56.5837961 25,56.1057876 L25,51.9997143 C25,51.4477044 25.447,50.9996964 26,50.9996964 L39,50.9996964 L39,44.9995893 L26,44.9995893 C25.447,44.9995893 25,44.5515813 25,43.9995714 L25,25.99925 C25,25.4472401 25.447,24.9992321 26,24.9992321 L54,24.9992321 C54.553,24.9992321 55,25.4472401 55,25.99925 L55,43.9995714 C55,44.5515813 54.553,44.9995893 54,44.9995893 L41,44.9995893 L41,50.9996964 L54,50.9996964 C54.553,50.9996964 55,51.4477044 55,51.9997143 L55,56.1057876 C57.25,56.5837961 59,58.6308327 59,60.999875 L59,60.999875 Z M68,39.9995 C68,45.9066055 66.177,51.5597064 62.727,56.3447919 L61.104,55.174771 C64.307,50.7316916 66,45.4845979 66,39.9995 C66,25.664244 54.337,14.0000357 40.001,14.0000357 C25.664,14.0000357 14,25.664244 14,39.9995 C14,45.4845979 15.693,50.7316916 18.896,55.174771 L17.273,56.3447919 C13.823,51.5597064 12,45.9066055 12,39.9995 C12,24.5612243 24.561,12 39.999,12 C55.438,12 68,24.5612243 68,39.9995 L68,39.9995 Z" fill="#FFFFFF"></path></g></symbol><marker id="m-signin" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-signin"></path></marker><marker id="m-request" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-request"></path></marker><marker id="m-cart" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-cart"></path></marker><marker id="m-order" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-order"></path></marker><marker id="m-process" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-process"></path></marker><marker id="m-failure" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-failure"></path></marker><marker id="m-admin" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-admin"></path></marker></defs><rect width="1480" height="712" fill="#FFFFFF"></rect>
+<rect class="grp" x="184" y="16" width="1280" height="682" fill="none" stroke="#232F3E" stroke-width="1.5"></rect>
+<use href="#i-group-aws-cloud" x="184" y="16" width="26" height="26"></use>
+<text class="gl" x="216" y="33" fill="#232F3E">AWS Cloud</text>
+<rect class="grp" x="356" y="48" width="1094" height="636" fill="none" stroke="#00A4A6" stroke-width="1.5" stroke-dasharray="6 4"></rect>
+<use href="#i-group-region" x="356" y="48" width="26" height="26"></use>
+<text class="gl" x="388" y="65" fill="#007D7F">Region ap-southeast-1<tspan class="gs" dx="8">Singapore</tspan></text>
+<rect class="bedbox" x="806" y="90" width="198" height="434" rx="8"></rect>
+<line x1="461" y1="184" x2="461" y2="264" stroke="#7D8998" stroke-width="1.2" stroke-dasharray="2 3"></line>
+<g class="node" data-id="users" tabindex="0" role="button">
+<rect class="hit" x="16" y="260" width="130" height="84" rx="6"></rect>
+<use href="#i-res-users" x="59" y="264" width="44" height="44"></use>
+<text class="nl" x="81" y="323" text-anchor="middle">Customer / Admin</text>
+<text class="ns" x="81" y="336" text-anchor="middle">Web browser</text>
+</g>
+<g class="node" data-id="cloudfront" tabindex="0" role="button">
+<rect class="hit" x="200" y="260" width="140" height="84" rx="6"></rect>
+<use href="#i-amazon-cloudfront" x="248" y="264" width="44" height="44"></use>
+<text class="nl" x="270" y="323" text-anchor="middle">Amazon CloudFront</text>
+<text class="ns" x="270" y="336" text-anchor="middle">Web + /api/*</text>
+</g>
+<g class="node" data-id="cognito" tabindex="0" role="button">
+<rect class="hit" x="386" y="100" width="150" height="84" rx="6"></rect>
+<use href="#i-amazon-cognito" x="439" y="104" width="44" height="44"></use>
+<text class="nl" x="461" y="163" text-anchor="middle">Amazon Cognito</text>
+<text class="ns" x="461" y="176" text-anchor="middle">User pool, JWT</text>
+</g>
+<g class="node" data-id="apigw" tabindex="0" role="button">
+<rect class="hit" x="386" y="260" width="150" height="84" rx="6"></rect>
+<use href="#i-amazon-api-gateway" x="439" y="264" width="44" height="44"></use>
+<text class="nl" x="461" y="323" text-anchor="middle">Amazon API Gateway</text>
+<text class="ns" x="461" y="336" text-anchor="middle">HTTP API, JWT check</text>
+</g>
+<g class="node" data-id="cart" tabindex="0" role="button">
+<rect class="hit" x="590" y="100" width="170" height="84" rx="6"></rect>
+<use href="#i-aws-lambda" x="653" y="104" width="44" height="44"></use>
+<text class="nl" x="675" y="163" text-anchor="middle">Lambda cart</text>
+<text class="ns" x="675" y="176" text-anchor="middle">/api/v1/cart</text>
+</g>
+<g class="node" data-id="ordering" tabindex="0" role="button">
+<rect class="hit" x="590" y="260" width="170" height="84" rx="6"></rect>
+<use href="#i-aws-lambda" x="653" y="264" width="44" height="44"></use>
+<text class="nl" x="675" y="323" text-anchor="middle">Lambda ordering</text>
+<text class="ns" x="675" y="336" text-anchor="middle">/api/v1/orders</text>
+</g>
+<g class="node" data-id="admin" tabindex="0" role="button">
+<rect class="hit" x="590" y="580" width="170" height="84" rx="6"></rect>
+<use href="#i-aws-lambda" x="653" y="584" width="44" height="44"></use>
+<text class="nl" x="675" y="643" text-anchor="middle">Lambda ordering-admin</text>
+<text class="ns" x="675" y="656" text-anchor="middle">/api/v1/admin/orders</text>
+</g>
+<g class="node" data-id="carts" tabindex="0" role="button">
+<rect class="hit" x="820" y="100" width="170" height="84" rx="6"></rect>
+<use href="#i-res-amazon-dynamodb-table" x="883" y="104" width="44" height="44"></use>
+<text class="nl" x="905" y="163" text-anchor="middle">DynamoDB carts</text>
+<text class="ns" x="905" y="176" text-anchor="middle">one cart per user</text>
+</g>
+<g class="node" data-id="products" tabindex="0" role="button">
+<rect class="hit" x="820" y="210" width="170" height="84" rx="6"></rect>
+<use href="#i-res-amazon-dynamodb-table" x="883" y="214" width="44" height="44"></use>
+<text class="nl" x="905" y="273" text-anchor="middle">DynamoDB products</text>
+<text class="ns" x="905" y="286" text-anchor="middle">stock &gt;= quantity</text>
+</g>
+<g class="node" data-id="orders" tabindex="0" role="button">
+<rect class="hit" x="820" y="320" width="170" height="84" rx="6"></rect>
+<use href="#i-res-amazon-dynamodb-table" x="883" y="324" width="44" height="44"></use>
+<text class="nl" x="905" y="383" text-anchor="middle">DynamoDB orders</text>
+<text class="ns" x="905" y="396" text-anchor="middle">GSI byStatus, PITR</text>
+</g>
+<g class="node" data-id="idem" tabindex="0" role="button">
+<rect class="hit" x="820" y="430" width="170" height="84" rx="6"></rect>
+<use href="#i-res-amazon-dynamodb-table" x="883" y="434" width="44" height="44"></use>
+<text class="nl" x="905" y="493" text-anchor="middle">order-idempotency</text>
+<text class="ns" x="905" y="506" text-anchor="middle">TTL 24 hours</text>
+</g>
+<g class="node" data-id="dlq" tabindex="0" role="button">
+<rect class="hit" x="1050" y="100" width="160" height="84" rx="6"></rect>
+<use href="#i-res-amazon-simple-queue-service-queue" x="1108" y="104" width="44" height="44"></use>
+<text class="nl" x="1130" y="163" text-anchor="middle">Orders DLQ</text>
+<text class="ns" x="1130" y="176" text-anchor="middle">kept 14 days</text>
+</g>
+<g class="node" data-id="sqs" tabindex="0" role="button">
+<rect class="hit" x="1050" y="260" width="160" height="84" rx="6"></rect>
+<use href="#i-res-amazon-simple-queue-service-queue" x="1108" y="264" width="44" height="44"></use>
+<text class="nl" x="1130" y="323" text-anchor="middle">SQS orders</text>
+<text class="ns" x="1130" y="336" text-anchor="middle">encrypted, TLS only</text>
+</g>
+<g class="node" data-id="sns" tabindex="0" role="button">
+<rect class="hit" x="1260" y="100" width="170" height="84" rx="6"></rect>
+<use href="#i-amazon-simple-notification-service" x="1323" y="104" width="44" height="44"></use>
+<text class="nl" x="1345" y="163" text-anchor="middle">Amazon SNS</text>
+<text class="ns" x="1345" y="176" text-anchor="middle">order-confirmed</text>
+</g>
+<g class="node" data-id="processor" tabindex="0" role="button">
+<rect class="hit" x="1260" y="260" width="170" height="84" rx="6"></rect>
+<use href="#i-aws-lambda" x="1323" y="264" width="44" height="44"></use>
+<text class="nl" x="1345" y="323" text-anchor="middle">Lambda order-processor</text>
+<text class="ns" x="1345" y="336" text-anchor="middle">worker, batch 5</text>
+</g>
+<g class="node" data-id="ses" tabindex="0" role="button">
+<rect class="hit" x="1260" y="420" width="170" height="84" rx="6"></rect>
+<use href="#i-amazon-simple-email-service" x="1323" y="424" width="44" height="44"></use>
+<text class="nl" x="1345" y="483" text-anchor="middle">Amazon SES</text>
+<text class="ns" x="1345" y="496" text-anchor="middle">confirm / cancel email</text>
+</g>
+<text class="ns" x="905" y="82" text-anchor="middle">TransactWriteItems: stock, order, cart</text>
+<path class="flow f-signin" data-e="0" data-from="users" data-to="cognito" d="M 81 262 V 126 H 437" marker-end="url(#m-signin)"></path>
+<path class="flow f-request" data-e="1" data-from="users" data-to="cloudfront" d="M 105 286 H 246" marker-end="url(#m-request)"></path>
+<path class="flow f-request" data-e="2" data-from="cloudfront" data-to="apigw" d="M 294 286 H 437" marker-end="url(#m-request)"></path>
+<path class="flow f-cart" data-e="3" data-from="apigw" data-to="cart" d="M 485 286 H 560 V 126 H 651" marker-end="url(#m-cart)"></path>
+<path class="flow f-cart" data-e="4" data-from="cart" data-to="carts" d="M 699 126 H 881" marker-end="url(#m-cart)"></path>
+<path class="flow f-order" data-e="5" data-from="apigw" data-to="ordering" d="M 485 286 H 651" marker-end="url(#m-order)"></path>
+<path class="flow f-order" data-e="6" data-from="ordering" data-to="" d="M 699 286 H 800" marker-end="url(#m-order)"></path>
+<path class="flow f-order" data-e="7" data-from="ordering" data-to="sqs" d="M 675 346 V 540 H 1130 V 346" marker-end="url(#m-order)"></path>
+<path class="flow f-process" data-e="8" data-from="sqs" data-to="processor" d="M 1154 286 H 1321" marker-end="url(#m-process)"></path>
+<path class="flow f-process" data-e="9" data-from="processor" data-to="orders" d="M 1345 262 V 200 H 1030 V 346 H 929" marker-end="url(#m-process)"></path>
+<path class="flow f-process" data-e="10" data-from="processor" data-to="ses" d="M 1345 346 V 422" marker-end="url(#m-process)"></path>
+<path class="flow f-process" data-e="11" data-from="processor" data-to="sns" d="M 1345 262 V 186" marker-end="url(#m-process)"></path>
+<path class="flow f-failure" data-e="12" data-from="sqs" data-to="dlq" d="M 1130 262 V 186" marker-end="url(#m-failure)" stroke-dasharray="7.23 5.16"></path>
+<path class="flow f-admin" data-e="13" data-from="apigw" data-to="admin" d="M 485 286 H 560 V 606 H 651" marker-end="url(#m-admin)"></path>
+<path class="flow f-admin" data-e="14" data-from="admin" data-to="orders" d="M 699 606 H 785 V 346 H 881" marker-end="url(#m-admin)"></path>
+<g class="flow f-signin fl" data-e="0"><rect class="flbox"></rect><text class="flabel c-signin" x="270" y="120" text-anchor="middle">SRP, optional TOTP</text></g>
+<g class="flow f-order fl" data-e="6"><rect class="flbox"></rect><text class="flabel c-order" x="752" y="280" text-anchor="middle">1 transaction</text></g>
+<g class="flow f-order fl" data-e="7"><rect class="flbox"></rect><text class="flabel c-order" x="1062" y="534" text-anchor="middle">SendMessage</text></g>
+<g class="flow f-process fl" data-e="9"><rect class="flbox"></rect><text class="flabel c-process" x="1240" y="216" text-anchor="middle">CONFIRMED</text></g>
+<g class="flow f-admin fl" data-e="14"><rect class="flbox"></rect><text class="flabel c-admin" x="791" y="572" text-anchor="start">byStatus</text></g>
+<g class="flow f-signin badge" data-e="0"><circle cx="81" cy="200" r="10" class="b-signin"></circle><text x="81" y="204" text-anchor="middle" class="bt">1</text></g>
+<g class="flow f-request badge" data-e="1"><circle cx="173" cy="286" r="10" class="b-request"></circle><text x="173" y="290" text-anchor="middle" class="bt">2</text></g>
+<g class="flow f-cart badge" data-e="3"><circle cx="560" cy="200" r="10" class="b-cart"></circle><text x="560" y="204" text-anchor="middle" class="bt">3</text></g>
+<g class="flow f-order badge" data-e="7"><circle cx="900" cy="540" r="10" class="b-order"></circle><text x="900" y="544" text-anchor="middle" class="bt">4</text></g>
+<g class="flow f-process badge" data-e="8"><circle cx="1240" cy="286" r="10" class="b-process"></circle><text x="1240" y="290" text-anchor="middle" class="bt">5</text></g>
+<g class="flow f-failure badge" data-e="12"><circle cx="1130" cy="232" r="10" class="b-failure"></circle><text x="1130" y="236" text-anchor="middle" class="bt">6</text></g>
+<g class="flow f-admin badge" data-e="13"><circle cx="560" cy="520" r="10" class="b-admin"></circle><text x="560" y="524" text-anchor="middle" class="bt">7</text></g></svg></div>
+  <p class="hint">Email is sent only when the stack is deployed with senderEmail; the DLQ alarm exists in prod only.</p>
+
+  <details open><summary>Flow steps</summary><ol><li><b>Sign in.</b> The browser signs in to the Cognito user pool with SRP (TOTP MFA when enabled) and receives a JWT.</li><li><b>API request.</b> Calls go over HTTPS to CloudFront, which forwards /api/* to the HTTP API; API Gateway checks the JWT.</li><li><b>Cart.</b> Lambda cart reads and writes the carts table with a version check.</li><li><b>Place order.</b> Lambda ordering writes stock, order and cart in one TransactWriteItems, keyed by Idempotency-Key, then sends the order to SQS.</li><li><b>Process order.</b> Lambda order-processor marks the order CONFIRMED, emails the customer through SES and publishes order-confirmed to SNS.</li><li><b>Failures to DLQ.</b> A message that fails 3 times moves to the dead-letter queue instead of being lost.</li><li><b>Admin.</b> Lambda ordering-admin reads the byStatus index and moves orders through SHIPPED and DELIVERED, or cancels them.</li></ol></details>
+
+</main>
+
+<script>
+const D = {
+  "users": [
+    "Customer / Admin",
+    "Web browser",
+    "Customers shop and place orders; admins in the Cognito admin group manage order status."
+  ],
+  "cloudfront": [
+    "Web delivery",
+    "Amazon CloudFront",
+    "Serves the React web from S3 and forwards /api/* to API Gateway over HTTPS."
+  ],
+  "cognito": [
+    "User identity",
+    "Amazon Cognito",
+    "Signs users in with SRP and optional TOTP MFA and issues the JWT that the API checks."
+  ],
+  "apigw": [
+    "HTTP API",
+    "Amazon API Gateway",
+    "Checks the Cognito JWT on every write route and routes each path to its module Lambda."
+  ],
+  "cart": [
+    "Cart handler",
+    "AWS Lambda",
+    "Reads and writes the customer cart with a version check so two tabs do not overwrite each other."
+  ],
+  "ordering": [
+    "Order handler",
+    "AWS Lambda",
+    "Places an order in one DynamoDB transaction with an Idempotency-Key, then queues it for the worker."
+  ],
+  "admin": [
+    "Admin order handler",
+    "AWS Lambda",
+    "Lists orders by status and moves them to SHIPPED, DELIVERED or CANCELLED; admin group only."
+  ],
+  "carts": [
+    "carts table",
+    "Amazon DynamoDB",
+    "One item per customer holding the cart lines; the order transaction clears the bought lines."
+  ],
+  "products": [
+    "products table",
+    "Amazon DynamoDB",
+    "Stock is decremented in the order transaction only when stock >= quantity, and added back on cancel."
+  ],
+  "orders": [
+    "orders table",
+    "Amazon DynamoDB",
+    "Orders keyed by userId and ULID orderId, with an open-order counter and point-in-time recovery."
+  ],
+  "idem": [
+    "Idempotency table",
+    "Amazon DynamoDB",
+    "Powertools Idempotency records so a repeated request or message is processed only once."
+  ],
+  "dlq": [
+    "Dead-letter queue",
+    "Amazon SQS",
+    "Holds an order message after 3 failed receives so it is not lost; alarmed in prod."
+  ],
+  "sqs": [
+    "Order queue",
+    "Amazon SQS",
+    "New and cancelled orders wait here, so an order survives while the worker is down."
+  ],
+  "sns": [
+    "Order events",
+    "Amazon SNS",
+    "Publishes order-confirmed; the events module subscribes to record PURCHASE events (chapter 5.5)."
+  ],
+  "processor": [
+    "Order worker",
+    "AWS Lambda",
+    "Confirms the order, sends the email and publishes order-confirmed; reports failures per message."
+  ],
+  "ses": [
+    "Email",
+    "Amazon SES",
+    "Sends order confirmation and cancellation emails; in the sandbox only to verified addresses."
+  ]
+};
+{
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const phone=matchMedia('(max-width:700px)');
+const NS='http://www.w3.org/2000/svg',bar=$('#bar'),sheet=$('.sheet'),svg=sheet.querySelector('svg'),cap=$('#cap'),intro=cap.textContent;
+const pv=$('#pv'),nx=$('#nx'),mo=$('#motion'),rg=$('#scrub'),hopEl=$('#hop'),nt=$('#nt'),nn=$('#neon'),rl=$('#railbtn'),cb=$('#chipbar');
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const nodesOf=id=>$$(`.node[data-id="${CSS.escape(id)}"]`);
+const nm=(id,g)=>id&&D[id]?D[id][0]:g?`the ${g} boundary`:'outside the diagram';
+const FLOWS=$$('details ol li').map(li=>li.innerHTML),FIDS=$$('.chip').map(c=>c.dataset.f).filter(Boolean),FNAME={};
+const EDGES=$$('path.flow').map(p=>({p,f:[...p.classList].find(c=>c.startsWith('f-')).slice(2),a:p.dataset.from,z:p.dataset.to,ag:p.dataset.fromGroup,zg:p.dataset.toGroup}));
+$$('.flow').forEach(el=>{const f=[...el.classList].find(c=>c.startsWith('f-'));if(f)el.style.color=`var(--${f.slice(2)})`});
+$$('.chip').forEach(c=>{const i=c.querySelector('i');if(i)c.style.setProperty('--c',i.style.background);if(c.dataset.f)FNAME[c.dataset.f]=c.querySelector('.t').textContent});
+new ResizeObserver(()=>document.documentElement.style.setProperty('--dh',bar.offsetHeight+'px')).observe(bar);
+
+// packets along arrows
+function traffic(list){svg.querySelectorAll('.pkt').forEach(x=>x.remove());
+  list.forEach((e,i)=>{const L=e.p.getTotalLength(),dur=Math.max(.8,L/240),k=list.length>1?2:3;
+    for(let j=0;j<k;j++){const c=document.createElementNS(NS,'circle');c.setAttribute('r',5);c.setAttribute('class','pkt');c.setAttribute('fill',`var(--${e.f})`);c.style.color=`var(--${e.f})`;
+      const a=document.createElementNS(NS,'animateMotion');a.setAttribute('dur',dur+'s');a.setAttribute('repeatCount','indefinite');a.setAttribute('begin',(svg.getCurrentTime()+i*.2+j*dur/k)+'s');a.setAttribute('path',e.p.getAttribute('d'));c.append(a);svg.append(c)}})}
+
+// flow selection and spotlight
+let flow='',walking=false,pin=false,hops=[],h=0;
+function spot(){$$('.flow.on').forEach(e=>e.classList.remove('on'));$$('.node.lit').forEach(n=>n.classList.remove('lit'));
+  EDGES.filter(e=>e.f===flow).forEach(e=>{e.p.classList.add('on');[e.a,e.z].forEach(x=>x&&nodesOf(x).forEach(n=>n.classList.add('lit')))})}
+function caption(){cap.classList.remove('open');if(phone.matches)cap.setAttribute('aria-expanded','false');
+  if(flow){cap.style.setProperty('--c',`var(--${flow})`);cap.innerHTML=FLOWS[FIDS.indexOf(flow)]||''}else{cap.style.setProperty('--c','var(--line)');cap.textContent=intro}}
+$$('.chip').forEach(c=>c.addEventListener('click',()=>{
+  $$('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c?'true':'false'));
+  flow=c.dataset.f;if(flow)document.body.dataset.flow=flow;else delete document.body.dataset.flow;
+  spot();caption();overview();
+  if(phone.matches)c.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'})}));
+
+// neighbourhood of a hovered or focused icon
+// size each label box from the rendered text, so the box fits whatever font loaded
+function fitLabels(){svg.querySelectorAll('.fl').forEach(g=>{const b=g.querySelector('text').getBBox(),r=g.querySelector('.flbox');
+  r.setAttribute('x',b.x-4);r.setAttribute('y',b.y-2);r.setAttribute('width',b.width+8);r.setAttribute('height',b.height+4);r.setAttribute('rx',4)})}
+fitLabels();if(document.fonts)document.fonts.ready.then(fitLabels);
+function nbOff(){sheet.classList.remove('nb');$$('.me,.near,.link').forEach(x=>x.classList.remove('me','near','link'))}
+function nbOn(n){if(walking||pin)return;nbOff();const id=n.dataset.id,mine=EDGES.filter(e=>e.a===id||e.z===id);if(!mine.length)return;
+  sheet.classList.add('nb');n.classList.add('me');mine.forEach(e=>{e.p.classList.add('link');svg.querySelectorAll(`.fl[data-e="${e.p.dataset.e}"],.badge[data-e="${e.p.dataset.e}"]`).forEach(t=>t.classList.add('link'));[e.a,e.z].forEach(x=>x&&nodesOf(x).forEach(m=>m.classList.add('near')))})}
+
+// timeline: step 0 is the overview, steps 1..N walk the arrows of the pressed flow (or all of them)
+function overview(){walking=false;sheet.classList.remove('walk');$$('.past,.now,.seen,.off').forEach(x=>x.classList.remove('past','now','seen','off'));
+  hops=flow?EDGES.filter(e=>e.f===flow):EDGES.slice();rg.max=hops.length;rg.value=0;rg.style.setProperty('--c',flow?`var(--${flow})`:'var(--muted)');
+  rg.setAttribute('aria-valuetext','Overview, all arrows shown');pv.disabled=true;nx.disabled=!hops.length;traffic(EDGES.filter(e=>e.f===flow))}
+function paint(){walking=true;sheet.classList.add('walk');nbOff();const seen=new Set(),reached=new Set();
+  EDGES.forEach(e=>{const i=hops.indexOf(e);e.p.classList.toggle('past',i>=0&&i<h);e.p.classList.toggle('now',i===h);if(i>=0&&i<=h){seen.add(e.f);[e.a,e.z].forEach(x=>x&&reached.add(x))}});
+  $$('.flow:not(path)').forEach(t=>t.classList.toggle('seen',[...t.classList].some(c=>c.startsWith('f-')&&seen.has(c.slice(2)))));
+  $$('.node').forEach(n=>n.classList.toggle('off',!reached.has(n.dataset.id)));
+  const e=hops[h],text=`Arrow ${h+1} of ${hops.length}: ${nm(e.a,e.ag)} → ${nm(e.z,e.zg)}`+(flow?'':` (${FNAME[e.f]||e.f})`);
+  hopEl.textContent=text;rg.value=h+1;rg.setAttribute('aria-valuetext',text);rg.style.setProperty('--c',`var(--${e.f})`);
+  pv.disabled=false;nx.disabled=h>=hops.length-1;traffic([e]);setTimeout(follow,30)}
+function follow(){if(!phone.matches||!walking||!hops[h])return;const r=hops[h].p.getBoundingClientRect(),s=sheet.getBoundingClientRect(),b=bar.getBoundingClientRect();
+  sheet.scrollBy({left:(r.left+r.width/2)-(s.left+s.width/2),behavior:'smooth'});
+  const top=cb.getBoundingClientRect().bottom+8,bot=b.top-12;if(r.top<top||r.bottom>bot)scrollBy({top:r.top-top-Math.max(0,(bot-top-r.height)/2),behavior:'smooth'})}
+nx.onclick=()=>{h=walking?h+1:0;paint()};
+pv.onclick=()=>{if(h<=0){overview();return}h--;paint()};
+rg.oninput=()=>{const v=+rg.value;if(v===0){overview();return}h=v-1;paint()};
+
+// one switch for dashes and packets (WCAG 2.2.2); motion always starts on, the switch is the only way to stop it
+mo.onclick=()=>{const on=!document.body.classList.contains('still');document.body.classList.toggle('still',on);mo.setAttribute('aria-pressed',on);on?svg.pauseAnimations():svg.unpauseAnimations()};
+
+// service card
+const pop=document.createElement('div');pop.id='pop';pop.hidden=true;pop.setAttribute('role','dialog');pop.setAttribute('aria-labelledby','pop-h');
+pop.innerHTML='<button type="button" class="x" aria-label="Close detail">×</button><section id="detail"><h2 id="pop-h"></h2><div class="aws"></div><p></p></section>';sheet.append(pop);
+let last=null;
+function closePop(){pop.hidden=true;$$('.node.sel').forEach(n=>n.classList.remove('sel'));if(last)last.focus()}
+function openPop(n){const d=D[n.dataset.id];if(!d)return;last=n;$$('.node.sel').forEach(x=>x.classList.remove('sel'));nodesOf(n.dataset.id).forEach(x=>x.classList.add('sel'));
+  pop.querySelector('h2').textContent=d[0];pop.querySelector('.aws').textContent=d[1];pop.querySelector('p').textContent=d[2];pop.hidden=false;
+  const r=n.getBoundingClientRect(),s=sheet.getBoundingClientRect();let x=r.right-s.left+sheet.scrollLeft+8,y=r.top-s.top;
+  if(x+300>sheet.scrollWidth)x=r.left-s.left+sheet.scrollLeft-308;y=Math.min(y,sheet.scrollHeight-pop.offsetHeight-8);
+  pop.style.left=Math.max(8,x)+'px';pop.style.top=Math.max(8,y)+'px';pop.querySelector('.x').focus({preventScroll:true})}
+pop.querySelector('.x').onclick=closePop;
+pop.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();pop.querySelector('.x').focus()}});
+document.addEventListener('click',e=>{if(!pop.hidden&&!pop.contains(e.target)&&!e.target.closest('.node'))closePop()});
+$$('.node').forEach(n=>{n.addEventListener('click',()=>openPop(n));n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openPop(n)}});
+  n.addEventListener('pointerenter',()=>nbOn(n));n.addEventListener('pointerleave',nbOff);n.addEventListener('focus',()=>nbOn(n));n.addEventListener('blur',nbOff)});
+
+// caption opens on tap on a phone
+cap.addEventListener('click',()=>{if(!phone.matches)return;const o=cap.classList.toggle('open');cap.setAttribute('aria-expanded',o)});
+cap.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&phone.matches){e.preventDefault();cap.click()}});
+function layout(){const p=phone.matches;if(p){cap.tabIndex=0;cap.setAttribute('role','button');cap.setAttribute('aria-expanded','false')}
+  else{cap.removeAttribute('tabindex');cap.removeAttribute('role');cap.removeAttribute('aria-expanded');cap.classList.remove('open')}}
+phone.addEventListener('change',layout);layout();
+
+// notes, kept in this browser only
+const list=document.createElement('ol');list.id='notes';list.setAttribute('aria-label','Your notes');sheet.after(list);
+const key='awsk-notes-'+location.pathname;let NOTES=[];try{NOTES=JSON.parse(store.get(key)||'[]')}catch(e){}
+const at=(x,y)=>[x*svg.clientWidth+'px',y*svg.clientHeight+'px'];
+function renderNotes(){sheet.querySelectorAll('.note').forEach(n=>n.remove());list.replaceChildren();
+  NOTES.forEach((n,i)=>{const d=document.createElement('div');d.className='note';[d.style.left,d.style.top]=at(n.x,n.y);const b=document.createElement('b');b.textContent=i+1;d.append(b,n.t);
+    const x=document.createElement('button');x.type='button';x.setAttribute('aria-label',`Delete note ${i+1}`);x.textContent='×';
+    x.onclick=e=>{e.stopPropagation();NOTES.splice(i,1);store.set(key,JSON.stringify(NOTES));renderNotes()};d.append(x);sheet.append(d);
+    const li=document.createElement('li');li.textContent=n.t;list.append(li)})}
+function setPin(on){pin=on;nt.setAttribute('aria-pressed',on);sheet.classList.toggle('pin',on);if(on)nbOff()}
+function noteForm(x,y){sheet.querySelector('.nform')?.remove();const f=document.createElement('form');f.className='nform';[f.style.left,f.style.top]=at(x,y);
+  f.innerHTML='<label>Note<textarea rows="3" maxlength="280"></textarea></label><div><button type="submit" class="tool">Save</button><button type="button" class="tool">Cancel</button></div>';
+  const ta=f.querySelector('textarea'),done=()=>{f.remove();nt.focus()};
+  f.onsubmit=e=>{e.preventDefault();const t=ta.value.trim();if(t){NOTES.push({x,y,t});store.set(key,JSON.stringify(NOTES));renderNotes()}done()};
+  f.querySelector('[type=button]').onclick=done;
+  ta.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();f.requestSubmit()}if(e.key==='Escape'){e.stopPropagation();done()}};
+  f.addEventListener('click',e=>e.stopPropagation());sheet.append(f);ta.focus()}
+nt.onclick=()=>setPin(!pin);
+sheet.addEventListener('click',e=>{if(!pin||e.target.closest('.note,.nform,#pop'))return;e.preventDefault();e.stopPropagation();const s=svg.getBoundingClientRect();
+  setPin(false);noteForm((e.clientX-s.left)/s.width,(e.clientY-s.top)/s.height)},true);
+sheet.addEventListener('keydown',e=>{const n=e.target.closest&&e.target.closest('.node');if(!pin||!n||(e.key!=='Enter'&&e.key!==' '))return;e.preventDefault();e.stopPropagation();
+  const r=n.getBoundingClientRect(),s=svg.getBoundingClientRect();setPin(false);noteForm((r.left+r.width/2-s.left)/s.width,(r.top-s.top)/s.height)},true);
+addEventListener('resize',renderNotes);renderNotes();
+
+// Night: tiles are added once, and have no fill outside Night
+let tiled=false;
+function setNight(on){if(on&&!tiled){tiled=true;svg.querySelectorAll('.node use').forEach(u=>{const b=u.getBBox();if(b.width<20||b.width>80)return;const r=document.createElementNS(NS,'rect');
+    r.setAttribute('class','tile');r.setAttribute('x',b.x-3);r.setAttribute('y',b.y-3);r.setAttribute('width',b.width+6);r.setAttribute('height',b.height+6);r.setAttribute('rx',6);u.before(r)})}
+  document.body.classList.toggle('night',on);if(on)document.documentElement.dataset.theme='dark';else delete document.documentElement.dataset.theme;nn.setAttribute('aria-pressed',on);store.set('awsk-night',on?'1':'')}
+nn.onclick=()=>setNight(!document.body.classList.contains('night'));setNight(store.get('awsk-night')==='1');
+
+// vertical rail switch
+function setRail(on){document.body.classList.toggle('rail',on);rl.setAttribute('aria-pressed',on);store.set('awsk-rail',on?'1':'')}
+rl.onclick=()=>setRail(!document.body.classList.contains('rail'));setRail(store.get('awsk-rail')==='1');
+
+// Escape closes the innermost layer only, and hides tooltips (WCAG 1.4.13)
+let popWasOpen=false;document.addEventListener('keydown',()=>{popWasOpen=!pop.hidden},true);
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;document.body.classList.add('notip');
+  if(popWasOpen)closePop();else if(pin){setPin(false);nt.focus()}else if(walking)overview()});
+document.addEventListener('pointermove',()=>document.body.classList.remove('notip'));
+document.addEventListener('focusin',()=>document.body.classList.remove('notip'));
+caption();overview();
+}
+</script>
+</body></html>
